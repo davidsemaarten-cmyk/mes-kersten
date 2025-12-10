@@ -1,0 +1,410 @@
+/**
+ * AddPlatesModal component
+ * Modal for adding one or multiple plates with cascading material selection
+ */
+
+import { useState, useMemo } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
+import { Textarea } from './ui/textarea'
+import { useMaterials, useCreatePlates } from '../hooks/usePlateStock'
+import type { PlateCreate } from '../types/database'
+
+interface AddPlatesModalProps {
+  open: boolean
+  onClose: () => void
+}
+
+const LOCATIONS = [
+  'Lade 1', 'Lade 2', 'Lade 3', 'Lade 4', 'Lade 5',
+  'Lade 6', 'Lade 7', 'Lade 8', 'Lade 9', 'Lade 10',
+  'Pallet 1', 'Pallet 2', 'Pallet 3', 'Pallet 4', 'Pallet 5',
+  'Rest'
+]
+
+export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
+  const { data: materials } = useMaterials()
+  const createPlates = useCreatePlates()
+
+  // Material selection state
+  const [selectedMaterialGroep, setSelectedMaterialGroep] = useState<string>('')
+  const [selectedSpecificatie, setSelectedSpecificatie] = useState<string>('')
+  const [selectedOppervlaktebewerking, setSelectedOppervlaktebewerking] = useState<string>('')
+
+  const [formData, setFormData] = useState<PlateCreate & { aantal: number }>({
+    material_prefix: '',
+    quality: '',
+    thickness: 0,
+    width: 0,
+    length: 0,
+    weight: undefined,
+    location: '',
+    notes: '',
+    aantal: 1
+  })
+
+  // Get unique materiaalgroepen
+  const materiaalgroepen = useMemo(() => {
+    if (!materials) return []
+    const unique = [...new Set(materials.map(m => m.materiaalgroep))]
+    return unique.sort()
+  }, [materials])
+
+  // Get specificaties for selected materiaalgroep
+  const specificaties = useMemo(() => {
+    if (!materials || !selectedMaterialGroep) return []
+    const filtered = materials.filter(m => m.materiaalgroep === selectedMaterialGroep)
+    const unique = [...new Set(filtered.map(m => m.specificatie).filter(s => s !== null))]
+    return unique.sort()
+  }, [materials, selectedMaterialGroep])
+
+  // Get oppervlaktebewerkingen for selected materiaalgroep and specificatie
+  const oppervlaktebewerkingen = useMemo(() => {
+    if (!materials || !selectedMaterialGroep) return []
+    const filtered = materials.filter(m => {
+      if (m.materiaalgroep !== selectedMaterialGroep) return false
+      // If specificaties exist for this groep, filter by selected specificatie
+      if (specificaties.length > 0 && selectedSpecificatie) {
+        return m.specificatie === selectedSpecificatie
+      }
+      // If no specificatie is selected and specificaties exist, don't show anything
+      if (specificaties.length > 0 && !selectedSpecificatie) {
+        return false
+      }
+      // If no specificaties exist for this groep, just filter by groep
+      return true
+    })
+    const unique = [...new Set(filtered.map(m => m.oppervlaktebewerking))]
+    return unique.sort()
+  }, [materials, selectedMaterialGroep, selectedSpecificatie, specificaties])
+
+  // Get the final material based on all selections
+  const selectedMaterial = useMemo(() => {
+    if (!materials || !selectedMaterialGroep || !selectedOppervlaktebewerking) return null
+
+    return materials.find(m => {
+      if (m.materiaalgroep !== selectedMaterialGroep) return false
+      if (m.oppervlaktebewerking !== selectedOppervlaktebewerking) return false
+
+      // Check specificatie match
+      if (specificaties.length > 0) {
+        return m.specificatie === (selectedSpecificatie || null)
+      }
+
+      return true
+    })
+  }, [materials, selectedMaterialGroep, selectedSpecificatie, selectedOppervlaktebewerking, specificaties])
+
+  // Update material_prefix when selection changes
+  useMemo(() => {
+    if (selectedMaterial) {
+      setFormData(prev => ({ ...prev, material_prefix: selectedMaterial.plaatcode_prefix }))
+    }
+  }, [selectedMaterial])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const { aantal, ...plateData } = formData
+
+    // Set quality to "Standaard" since it's no longer in the form
+    const plateDataWithQuality = {
+      ...plateData,
+      quality: 'Standaard'
+    }
+
+    try {
+      await createPlates.mutateAsync({
+        data: plateDataWithQuality,
+        aantal
+      })
+
+      // Reset form and close
+      setSelectedMaterialGroep('')
+      setSelectedSpecificatie('')
+      setSelectedOppervlaktebewerking('')
+      setFormData({
+        material_prefix: '',
+        quality: '',
+        thickness: 0,
+        width: 0,
+        length: 0,
+        weight: undefined,
+        location: '',
+        notes: '',
+        aantal: 1
+      })
+      onClose()
+    } catch (error) {
+      // Error handled by mutation
+    }
+  }
+
+  // Handle materiaalgroep change
+  const handleMaterialGroepChange = (value: string) => {
+    setSelectedMaterialGroep(value)
+    setSelectedSpecificatie('')
+    setSelectedOppervlaktebewerking('')
+    setFormData(prev => ({ ...prev, material_prefix: '' }))
+  }
+
+  // Handle specificatie change
+  const handleSpecificatieChange = (value: string) => {
+    setSelectedSpecificatie(value)
+    setSelectedOppervlaktebewerking('')
+    setFormData(prev => ({ ...prev, material_prefix: '' }))
+  }
+
+  // Handle oppervlaktebewerking change
+  const handleOppervlaktebewerkingChange = (value: string) => {
+    setSelectedOppervlaktebewerking(value)
+  }
+
+  const calculateArea = () => {
+    if (formData.width && formData.length) {
+      return ((formData.width * formData.length) / 1_000_000).toFixed(2)
+    }
+    return '0.00'
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Platen Toevoegen</DialogTitle>
+          <DialogDescription>
+            Selecteer het materiaal en voer de plaatgegevens in
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Material Selection - 3 Cascading Dropdowns */}
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+            <h3 className="text-sm font-medium">Materiaal Selectie *</h3>
+
+            {/* Materiaalgroep */}
+            <div className="space-y-2">
+              <Label htmlFor="materiaalgroep">Materiaalgroep</Label>
+              <Select
+                value={selectedMaterialGroep}
+                onValueChange={handleMaterialGroepChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecteer materiaalgroep" />
+                </SelectTrigger>
+                <SelectContent>
+                  {materiaalgroepen.map((groep) => (
+                    <SelectItem key={`groep-${groep}`} value={groep}>
+                      {groep}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Specificatie (only if available for selected materiaalgroep) */}
+            {specificaties.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="specificatie">Specificatie</Label>
+                <Select
+                  value={selectedSpecificatie}
+                  onValueChange={handleSpecificatieChange}
+                  disabled={!selectedMaterialGroep}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecteer specificatie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {specificaties.map((spec) => (
+                      <SelectItem key={`spec-${spec}`} value={spec || ''}>
+                        {spec}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Oppervlaktebewerking */}
+            <div className="space-y-2">
+              <Label htmlFor="oppervlaktebewerking">Oppervlaktebewerking</Label>
+              <Select
+                value={selectedOppervlaktebewerking}
+                onValueChange={handleOppervlaktebewerkingChange}
+                disabled={!selectedMaterialGroep || (specificaties.length > 0 && !selectedSpecificatie)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecteer oppervlaktebewerking" />
+                </SelectTrigger>
+                <SelectContent>
+                  {oppervlaktebewerkingen.map((bewerking) => (
+                    <SelectItem key={`bewerking-${bewerking}`} value={bewerking}>
+                      {bewerking}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Show selected material info */}
+            {selectedMaterial && (
+              <div className="p-3 bg-primary/10 rounded-md">
+                <p className="text-sm font-medium">
+                  Geselecteerd materiaal: {selectedMaterial.plaatcode_prefix}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {selectedMaterial.materiaalgroep}
+                  {selectedMaterial.specificatie && ` - ${selectedMaterial.specificatie}`}
+                  {' - '}{selectedMaterial.oppervlaktebewerking}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Dimensions Grid */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="thickness">Dikte (mm) *</Label>
+              <Input
+                id="thickness"
+                type="number"
+                step="0.1"
+                min="0"
+                value={formData.thickness || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, thickness: parseFloat(e.target.value) })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="width">Breedte (mm) *</Label>
+              <Input
+                id="width"
+                type="number"
+                min="0"
+                value={formData.width || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, width: parseInt(e.target.value) })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="length">Lengte (mm) *</Label>
+              <Input
+                id="length"
+                type="number"
+                min="0"
+                value={formData.length || ''}
+                onChange={(e) =>
+                  setFormData({ ...formData, length: parseInt(e.target.value) })
+                }
+                required
+              />
+            </div>
+          </div>
+
+          {/* Calculated Area */}
+          {formData.width && formData.length && (
+            <div className="p-3 bg-muted rounded-md">
+              <span className="text-sm font-medium">
+                Oppervlakte: {calculateArea()} m²
+              </span>
+            </div>
+          )}
+
+          {/* Weight */}
+          <div className="space-y-2">
+            <Label htmlFor="weight">Gewicht (kg)</Label>
+            <Input
+              id="weight"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.weight || ''}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  weight: e.target.value ? parseFloat(e.target.value) : undefined
+                })
+              }
+            />
+          </div>
+
+          {/* Location */}
+          <div className="space-y-2">
+            <Label htmlFor="location">Locatie</Label>
+            <Select
+              value={formData.location}
+              onValueChange={(value) =>
+                setFormData({ ...formData, location: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecteer locatie" />
+              </SelectTrigger>
+              <SelectContent>
+                {LOCATIONS.map((loc) => (
+                  <SelectItem key={`location-${loc}`} value={loc}>
+                    {loc}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Quantity */}
+          <div className="space-y-2">
+            <Label htmlFor="aantal">Aantal identieke platen *</Label>
+            <Input
+              id="aantal"
+              type="number"
+              min="1"
+              max="100"
+              value={formData.aantal}
+              onChange={(e) =>
+                setFormData({ ...formData, aantal: parseInt(e.target.value) })
+              }
+              required
+            />
+            <p className="text-sm text-muted-foreground">
+              Plaatnum mers worden automatisch gegenereerd
+            </p>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="notes">Opmerkingen</Label>
+            <Textarea
+              id="notes"
+              rows={3}
+              value={formData.notes}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Annuleren
+            </Button>
+            <Button
+              type="submit"
+              disabled={createPlates.isPending || !selectedMaterial}
+            >
+              {createPlates.isPending ? 'Toevoegen...' : 'Toevoegen'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}

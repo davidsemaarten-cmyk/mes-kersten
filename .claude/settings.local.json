@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where:*)",
+      "Bash(winget:*)",
+      "Bash(py --list:*)",
+      "Bash(mkdir:*)",
+      "Bash(venv/Scripts/python:*)",
+      "Bash(test:*)",
+      "Bash(npm install)",
+      "Bash(powershell -Command:*)",
+      "Bash(py -3.11 -c:*)",
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)",
+      "Bash(py -3.11 -m pip install psycopg2-binary)",
+      "Bash(py -3.11 run_migration.py:*)",
+      "Bash(venv/Scripts/pip install \"bcrypt<4.0.0\")",
+      "Bash(psql:*)",
+      "Bash(taskkill:*)",
+      "Bash(timeout /t 3)",
+      "Bash(timeout /t)",
+      "Bash(npx shadcn-ui@latest init)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(cat:*)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest add button input label card dialog select checkbox tabs badge table textarea)",
+      "Bash(venvScriptspython main.py)",
+      "Bash(venvScriptspython migrations002_make_material_prefix_nullable.py)",
+      "Bash(python:*)",
+      "Bash(timeout 10 python:*)",
+      "Bash(timeout 5 bash:*)",
+      "Bash(find:*)",
+      "Bash(.venvScriptspython.exe main.py)",
+      "Bash(dir:*)",
+      "Bash(claude --version:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
