@@ -1,0 +1,99 @@
+"""
+Custom exceptions for service layer
+Provides specific exception types for better error handling and HTTP status code mapping
+"""
+
+
+class ServiceError(Exception):
+    """Base exception for all service layer errors"""
+    pass
+
+
+# =====================================================
+# Project Exceptions
+# =====================================================
+
+class ProjectNotFoundError(ServiceError):
+    """Raised when a requested project does not exist"""
+    pass
+
+
+class ProjectCodeExistsError(ServiceError):
+    """Raised when attempting to create a project with a code that already exists"""
+    pass
+
+
+# =====================================================
+# Fase Exceptions
+# =====================================================
+
+class FaseNotFoundError(ServiceError):
+    """Raised when a requested fase does not exist"""
+    pass
+
+
+class FaseAlreadyExistsError(ServiceError):
+    """Raised when attempting to create a fase with a number that already exists in the project"""
+    pass
+
+
+class InvalidFaseNumberError(ServiceError):
+    """Raised when fase number format is invalid"""
+    pass
+
+
+# =====================================================
+# PlateStock Exceptions (for future consistency)
+# =====================================================
+
+class MaterialNotFoundError(ServiceError):
+    """Raised when a requested material does not exist"""
+    pass
+
+
+class PlateNotFoundError(ServiceError):
+    """Raised when a requested plate does not exist"""
+    pass
+
+
+class ClaimNotFoundError(ServiceError):
+    """Raised when a requested claim does not exist"""
+    pass
+
+
+# =====================================================
+# Future Module Exceptions (Phase 1.2+)
+# =====================================================
+
+class OrderNotFoundError(ServiceError):
+    """Raised when a requested order does not exist"""
+    pass
+
+
+class OrderReeksNotFoundError(ServiceError):
+    """Raised when a requested orderreeks does not exist"""
+    pass
+
+
+class PosnummerNotFoundError(ServiceError):
+    """Raised when a requested posnummer does not exist"""
+    pass
+
+
+class DuplicatePosnummerError(ServiceError):
+    """Raised when attempting to create a posnummer with a number that already exists in the fase"""
+    pass
+
+
+# =====================================================
+# Validation Exceptions
+# =====================================================
+
+class ValidationError(ServiceError):
+    """Raised when input validation fails"""
+    pass
+
+
+class PermissionDeniedError(ServiceError):
+    """Raised when user lacks required permissions"""
+    pass

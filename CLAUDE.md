@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Backend: Python 3.11+ with FastAPI, SQLAlchemy, PostgreSQL 15+
 - Frontend: React 18 with TypeScript, Vite, TailwindCSS, shadcn/ui
 - Database: PostgreSQL with UUID primary keys and SQL migrations
-- Authentication: JWT tokens with role-based access (admin, werkvoorbereider, werkplaats)
+- Authentication: JWT tokens with role-based access (8 roles: admin, werkvoorbereider, werkplaats, logistiek, tekenaar, laser, buislaser, kantbank)
 
 ## Development Commands
 
@@ -70,6 +70,7 @@ psql -U postgres -d mes_kersten
 - `001_core_tables.sql` - Users, roles, audit logs, auth functions
 - `002_platestock_tables.sql` - Materials, plates, claims tables
 - `003_refactor_materials.sql` - Material schema updates
+- `004_expand_roles_system.sql` - Expand to 8 roles, digital signatures, enhanced audit logging
 
 ## Architecture Guidelines
 
@@ -83,7 +84,7 @@ psql -U postgres -d mes_kersten
 - `models/` - SQLAlchemy ORM models (user.py, material.py, plate.py, claim.py, user_role.py)
 - `schemas/` - Pydantic request/response schemas (user.py, platestock.py)
 - `services/` - Business logic layer (platestock.py)
-- `utils/` - Utility functions (auth.py for JWT)
+- `utils/` - Utility functions (auth.py for JWT, audit.py for audit logging)
 - `migrations/` - Migration tracking (002_make_material_prefix_nullable.py)
 
 **Critical Patterns:**
@@ -91,13 +92,29 @@ psql -U postgres -d mes_kersten
 
 2. **Service Layer**: Business logic belongs in `services/`, NOT in route handlers. Routes should be thin wrappers that call service methods.
 
-3. **Role-Based Access**: Use helper functions `check_admin()` and `check_admin_or_werkvoorbereider()` from platestock.py as patterns for authorization.
+3. **Role-Based Access**: Use helper functions `check_admin()` and `check_admin_or_werkvoorbereider()` from platestock.py as patterns for authorization. All 8 roles defined in `types/roles.ts`.
 
-4. **Database Sessions**: Always use `db: Session = Depends(get_db)` for automatic session cleanup.
+4. **Audit Logging**: Use `log_action()` from `utils/audit.py` to track user actions with entity references.
+   - **Transaction Safety**: Default behavior does NOT auto-commit (use `auto_commit=False`)
+   - Always call `log_action()` BEFORE committing the main transaction
+   - Use `AuditAction` and `EntityType` enums for consistency
+   - Example:
+     ```python
+     from utils.audit import log_action, AuditAction, EntityType
 
-5. **UUID Primary Keys**: All tables use UUID primary keys via PostgreSQL's gen_random_uuid().
+     new_project = Project(...)
+     db.add(new_project)
+     db.flush()  # Get ID without committing
+     log_action(db, user_id, AuditAction.CREATE_PROJECT,
+                EntityType.PROJECT, new_project.id)
+     db.commit()  # Commits both atomically
+     ```
 
-6. **Timestamps**: Use `created_at` and `updated_at` fields with server defaults (func.now()).
+5. **Database Sessions**: Always use `db: Session = Depends(get_db)` for automatic session cleanup.
+
+6. **UUID Primary Keys**: All tables use UUID primary keys via PostgreSQL's gen_random_uuid().
+
+7. **Timestamps**: Use `created_at` and `updated_at` fields with server defaults (func.now()).
 
 ### Frontend Architecture
 
@@ -106,25 +123,32 @@ psql -U postgres -d mes_kersten
 - `src/App.tsx` - Router configuration, QueryClient setup, AuthProvider
 - `src/pages/` - Page components (Login, Dashboard, Voorraad, Claims, Werkplaats, Admin)
 - `src/components/` - Reusable UI components (shadcn/ui based)
-- `src/hooks/` - Custom React hooks (useAuth.tsx, usePlateStock.ts)
+- `src/hooks/` - Custom React hooks (useAuth.tsx, usePermissions.ts, usePlateStock.ts)
 - `src/lib/` - Utilities (api.ts for axios, utils.ts for helpers)
-- `src/types/` - TypeScript type definitions
+- `src/types/` - TypeScript type definitions (roles.ts with UserRole and RolePermissions, database.ts)
 
 **Critical Patterns:**
 1. **API Client**: Use the configured `api` instance from `src/lib/api.ts`. It includes:
    - Automatic Bearer token injection from localStorage
    - 401 redirect to /login
-   - Base URL configuration
 
-2. **React Query**: All API calls should use @tanstack/react-query with appropriate caching strategies (see App.tsx for QueryClient config).
+2. **Role-Based Permissions**: Use `usePermissions()` hook to check user permissions:
+   ```tsx
+   const { permissions, hasPermission } = usePermissions();
+   if (permissions.canCreateProjects) { /* render create button */ }
+   ```
+   - All 8 roles defined in `types/roles.ts`
+   - getRolePermissions() returns permission object for each role
 
-3. **Authentication**: The AuthProvider context provides authentication state. Check `hooks/useAuth.tsx` for the auth pattern.
+3. **React Query**: All API calls should use @tanstack/react-query with appropriate caching strategies (see App.tsx for QueryClient config).
 
-4. **Routing**: Uses react-router-dom v6 with future flags enabled (v7_startTransition, v7_relativeSplatPath).
+4. **Authentication**: The AuthProvider context provides authentication state. Check `hooks/useAuth.tsx` for the auth pattern.
 
-5. **UI Components**: Use shadcn/ui components from `src/components/` directory. Don't add new component libraries without good reason.
+5. **Routing**: Uses react-router-dom v6 with future flags enabled (v7_startTransition, v7_relativeSplatPath).
 
-6. **Toaster**: Global toast notifications via sonner (configured in App.tsx).
+6. **UI Components**: Use shadcn/ui components from `src/components/` directory. Don't add new component libraries without good reason.
+
+7. **Toaster**: Global toast notifications via sonner (configured in App.tsx).
 
 ### Database Design Patterns
 

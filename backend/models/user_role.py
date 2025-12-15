@@ -14,7 +14,15 @@ import uuid
 class UserRole(Base):
     """
     User role assignment
-    Supports multiple roles per user (admin, werkvoorbereider, werkplaats)
+    Supports multiple roles per user:
+    - admin: System configuration
+    - werkvoorbereider: Work preparation specialist
+    - werkplaats: Workshop worker
+    - logistiek: Logistics
+    - tekenaar: Draftsman (view-only)
+    - laser: Laser operator
+    - buislaser: Tube laser operator
+    - kantbank: Press brake operator
     """
     __tablename__ = "user_roles"
 
@@ -24,7 +32,10 @@ class UserRole(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
-        CheckConstraint("role IN ('admin', 'werkvoorbereider', 'werkplaats')", name='check_role_valid'),
+        CheckConstraint(
+            "role IN ('admin', 'werkvoorbereider', 'werkplaats', 'logistiek', 'tekenaar', 'laser', 'buislaser', 'kantbank')",
+            name='check_role_valid'
+        ),
     )
 
     # Relationships

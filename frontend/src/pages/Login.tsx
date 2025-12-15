@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import api from '../lib/api'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -8,6 +8,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -15,16 +16,8 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const response = await api.post('/api/auth/login', {
-        email,
-        password,
-      })
-
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token)
-        localStorage.setItem('user', JSON.stringify(response.data.user))
-        navigate('/dashboard')
-      }
+      await login(email, password)
+      navigate('/dashboard')
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Login mislukt. Probeer opnieuw.')
     } finally {
@@ -99,9 +92,43 @@ export default function Login() {
             </button>
           </div>
 
-          <div className="text-sm text-center text-gray-600">
-            <p>Test credentials:</p>
-            <p className="font-mono text-xs mt-1">admin@kersten.nl / admin123</p>
+          <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-md border border-gray-200">
+            <p className="font-semibold text-gray-700 mb-2">🧪 Test Credentials (Development)</p>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between items-center hover:bg-gray-100 px-2 py-1 rounded cursor-pointer" onClick={() => { setEmail('admin@kersten.nl'); setPassword('admin123'); }}>
+                <span className="font-semibold text-blue-600">Admin</span>
+                <span className="font-mono text-gray-600">admin@kersten.nl / admin123</span>
+              </div>
+              <div className="flex justify-between items-center hover:bg-gray-100 px-2 py-1 rounded cursor-pointer" onClick={() => { setEmail('werkvoorbereider@kersten.nl'); setPassword('test123'); }}>
+                <span className="font-semibold text-purple-600">Werkvoorbereider</span>
+                <span className="font-mono text-gray-600">werkvoorbereider@kersten.nl / test123</span>
+              </div>
+              <div className="flex justify-between items-center hover:bg-gray-100 px-2 py-1 rounded cursor-pointer" onClick={() => { setEmail('werkplaats@kersten.nl'); setPassword('test123'); }}>
+                <span className="font-semibold text-green-600">Werkplaats</span>
+                <span className="font-mono text-gray-600">werkplaats@kersten.nl / test123</span>
+              </div>
+              <div className="flex justify-between items-center hover:bg-gray-100 px-2 py-1 rounded cursor-pointer" onClick={() => { setEmail('logistiek@kersten.nl'); setPassword('test123'); }}>
+                <span className="font-semibold text-orange-600">Logistiek</span>
+                <span className="font-mono text-gray-600">logistiek@kersten.nl / test123</span>
+              </div>
+              <div className="flex justify-between items-center hover:bg-gray-100 px-2 py-1 rounded cursor-pointer" onClick={() => { setEmail('tekenaar@kersten.nl'); setPassword('test123'); }}>
+                <span className="font-semibold text-indigo-600">Tekenaar</span>
+                <span className="font-mono text-gray-600">tekenaar@kersten.nl / test123</span>
+              </div>
+              <div className="flex justify-between items-center hover:bg-gray-100 px-2 py-1 rounded cursor-pointer" onClick={() => { setEmail('laser@kersten.nl'); setPassword('test123'); }}>
+                <span className="font-semibold text-red-600">Laser</span>
+                <span className="font-mono text-gray-600">laser@kersten.nl / test123</span>
+              </div>
+              <div className="flex justify-between items-center hover:bg-gray-100 px-2 py-1 rounded cursor-pointer" onClick={() => { setEmail('buislaser@kersten.nl'); setPassword('test123'); }}>
+                <span className="font-semibold text-pink-600">Buislaser</span>
+                <span className="font-mono text-gray-600">buislaser@kersten.nl / test123</span>
+              </div>
+              <div className="flex justify-between items-center hover:bg-gray-100 px-2 py-1 rounded cursor-pointer" onClick={() => { setEmail('kantbank@kersten.nl'); setPassword('test123'); }}>
+                <span className="font-semibold text-teal-600">Kantbank</span>
+                <span className="font-mono text-gray-600">kantbank@kersten.nl / test123</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3 italic">💡 Tip: Klik op een rol om de credentials in te vullen</p>
           </div>
         </form>
 

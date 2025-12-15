@@ -2,12 +2,17 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { AuthProvider } from './hooks/useAuth'
+import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import { Voorraad } from './pages/Voorraad'
 import { Claims } from './pages/Claims'
 import { Werkplaats } from './pages/Werkplaats'
 import { Admin } from './pages/Admin'
+import { Projects } from './pages/Projects'
+import { ProjectDetail } from './pages/ProjectDetail'
+import { FaseDetail } from './pages/FaseDetail'
+import { Profile } from './pages/Profile'
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -32,13 +37,19 @@ function App() {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/profiel" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+            {/* Project Routes */}
+            <Route path="/projecten" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+            <Route path="/projecten/:projectId" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
+            <Route path="/projecten/:projectId/fases/:faseId" element={<ProtectedRoute><FaseDetail /></ProtectedRoute>} />
 
             {/* PlateStock Routes */}
-            <Route path="/voorraad" element={<Voorraad />} />
-            <Route path="/claims" element={<Claims />} />
-            <Route path="/werkplaats" element={<Werkplaats />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/voorraad" element={<ProtectedRoute><Voorraad /></ProtectedRoute>} />
+            <Route path="/claims" element={<ProtectedRoute><Claims /></ProtectedRoute>} />
+            <Route path="/werkplaats" element={<ProtectedRoute><Werkplaats /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
 
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>

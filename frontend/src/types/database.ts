@@ -9,11 +9,16 @@
 // User Types
 // =====================================================
 
+import type { UserRole } from './roles'
+
 export interface User {
   id: string
   email: string
   full_name: string
+  role: UserRole  // User's primary role
   is_active: boolean
+  digital_signature_url?: string | null
+  signature_uploaded_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -319,4 +324,141 @@ export interface ProjectsStatsResponse {
 // Helper type for Van Laser request
 export interface VanLaserRequest {
   new_location: string
+}
+
+// =====================================================
+// Orders System Types (Phase 1.2)
+// =====================================================
+
+// Order Type (predefined operation types)
+export interface OrderType {
+  id: string
+  name: string  // e.g., "Zagen", "Boren", "Kanten"
+  icon: string  // e.g., "saw", "drill", "fold"
+  sort_order: number
+}
+
+// Posnummer (Part Number)
+export interface Posnummer {
+  id: string
+  fase_id: string
+  posnr: string  // e.g., "001", "042"
+  materiaal: string  // e.g., "S235", "RVS 316"
+  profiel?: string | null  // e.g., "IPE 200", "Rechthoekige buis 40x40x3"
+  length_mm?: number | null
+  width_mm?: number | null
+  height_mm?: number | null
+  quantity: number
+  notes?: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  dimensions_display?: string  // Computed property from backend
+  file_count?: number  // Future: Phase 2
+}
+
+export interface PosnummerCreate {
+  posnr: string
+  materiaal: string
+  profiel?: string | null
+  length_mm?: number | null
+  width_mm?: number | null
+  height_mm?: number | null
+  quantity?: number
+  notes?: string | null
+}
+
+export interface PosnummerUpdate {
+  posnr?: string
+  materiaal?: string
+  profiel?: string | null
+  length_mm?: number | null
+  width_mm?: number | null
+  height_mm?: number | null
+  quantity?: number
+  notes?: string | null
+}
+
+// Order (individual operation in a sequence)
+export interface Order {
+  id: string
+  orderreeks_id: string
+  order_type_id: string
+  sequence_position: number  // 1, 2, 3, etc.
+  status: 'open' | 'in_uitvoering' | 'afgerond' | 'blocked'
+  assigned_to?: string | null
+  started_at?: string | null
+  completed_at?: string | null
+  completed_by?: string | null
+  approved_at?: string | null
+  approved_by?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface OrderResponse extends Order {
+  order_type_name: string
+  order_type_icon?: string
+  assigned_to_name?: string | null
+  posnummer_count: number
+}
+
+export interface OrderDetailResponse extends OrderResponse {
+  posnummers: Posnummer[]
+  assigned_user?: UserSummary | null
+  completed_user?: UserSummary | null
+  approved_user?: UserSummary | null
+}
+
+export interface OrderAssign {
+  assigned_to: string | null  // user_id or null to unassign
+}
+
+export interface LinkPosnummersRequest {
+  posnummer_ids: string[]
+}
+
+// Orderreeks (sequence of orders)
+export interface Orderreeks {
+  id: string
+  fase_id: string
+  title: string  // e.g., "Volledig", "West", "Oost"
+  status: 'open' | 'in_uitvoering' | 'afgerond'
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface OrderreeksResponse extends Orderreeks {
+  orders: OrderResponse[]
+  fase_code?: string  // e.g., "PROJECT-001"
+  order_count?: number
+  progress_percentage?: number  // 0-100
+}
+
+export interface OrderreeksCreate {
+  fase_id: string
+  title?: string  // Default: "Volledig"
+  order_type_ids: string[]  // List of order type IDs in desired sequence
+}
+
+export interface OrderreeksUpdate {
+  title?: string
+  status?: 'open' | 'in_uitvoering' | 'afgerond'
+}
+
+// Statistics for Fase
+export interface FaseStatistics {
+  order_count: number
+  posnummer_count: number
+  file_count: number  // Future: Phase 2
+  claimed_plate_count: number  // Future: Phase 5
+}
+
+// Statistics for Project
+export interface ProjectStatistics {
+  fase_count: number
+  order_count: number
+  posnummer_count: number
+  file_count: number  // Future: Phase 2
 }

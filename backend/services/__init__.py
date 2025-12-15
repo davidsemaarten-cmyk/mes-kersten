@@ -3,5 +3,6 @@ Business logic services
 """
 
 from .platestock import PlateStockService
+from .order import OrderService
 
-__all__ = ["PlateStockService"]
+__all__ = ["PlateStockService", "OrderService"]

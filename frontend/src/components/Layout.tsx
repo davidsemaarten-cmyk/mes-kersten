@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { Package, FileText, Wrench, Settings, LayoutDashboard } from 'lucide-react'
+import { Package, FileText, Wrench, Settings, LayoutDashboard, Folder } from 'lucide-react'
 
 interface LayoutProps {
   children: ReactNode
@@ -23,6 +23,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const navigationItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Projecten', path: '/projecten', icon: Folder },
     { name: 'Voorraad', path: '/voorraad', icon: Package },
     { name: 'Claims', path: '/claims', icon: FileText },
     { name: 'Werkplaats', path: '/werkplaats', icon: Wrench },
@@ -87,3 +88,6 @@ export default function Layout({ children }: LayoutProps) {
     </div>
   )
 }
+
+// Named export for consistency
+export { Layout }

@@ -30,6 +30,8 @@ class UserResponse(UserBase):
     """Schema for user response (without password)"""
     id: UUID
     is_active: bool
+    digital_signature_url: Optional[str] = None
+    signature_uploaded_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 

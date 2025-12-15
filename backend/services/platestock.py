@@ -350,8 +350,12 @@ class PlateStockService:
             - total_claimed_m2: Total claimed area
             - projects: List of project details
         """
-        # Get all active claims with plate data
-        active_claims = db.query(Claim).filter(Claim.actief == True).all()
+        from sqlalchemy.orm import joinedload
+
+        # Get all active claims with plate data (eager loaded to prevent N+1 queries)
+        active_claims = db.query(Claim).options(
+            joinedload(Claim.plate)
+        ).filter(Claim.actief == True).all()
 
         # Group by project
         projects = {}
@@ -372,9 +376,9 @@ class PlateStockService:
             if claim.m2_geclaimd:
                 projects[key]['m2'] += float(claim.m2_geclaimd)
             else:
-                plate = db.query(Plate).filter(Plate.id == claim.plate_id).first()
-                if plate:
-                    projects[key]['m2'] += float(PlateStockService.calculate_plate_area(plate))
+                # Use eager-loaded plate relationship (no additional query)
+                if claim.plate:
+                    projects[key]['m2'] += float(PlateStockService.calculate_plate_area(claim.plate))
 
         project_list = list(projects.values())
         total_claimed_m2 = sum(p['m2'] for p in project_list)
