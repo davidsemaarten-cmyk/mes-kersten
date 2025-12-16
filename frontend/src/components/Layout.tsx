@@ -1,6 +1,7 @@
 import { ReactNode, useState, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { usePermissions } from '../hooks/usePermissions'
 import {
   Package,
   FileText,
@@ -23,6 +24,7 @@ interface LayoutProps {
  */
 export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth()
+  const { permissions } = usePermissions()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -46,13 +48,20 @@ export default function Layout({ children }: LayoutProps) {
     setIsCollapsed(!isCollapsed)
   }
 
-  const navigationItems = [
+  // Define all navigation items with optional permission requirements
+  const allNavigationItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Projecten', path: '/projecten', icon: Folder },
+    { name: 'Projecten', path: '/projecten', icon: Folder, requiresPermission: 'canCreateProjects' as const },
     { name: 'Voorraad', path: '/voorraad', icon: Package },
     { name: 'Claims', path: '/claims', icon: FileText },
     { name: 'Admin', path: '/admin', icon: Settings },
   ]
+
+  // Filter navigation items based on permissions
+  const navigationItems = allNavigationItems.filter(item => {
+    if (!item.requiresPermission) return true
+    return permissions[item.requiresPermission]
+  })
 
   const isActive = (path: string) => {
     // Match exact path or any child path (for project details, etc.)
