@@ -15,10 +15,10 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-600 mt-1">
             Manufacturing Execution System voor M.C. Kersten
           </p>
         </div>
@@ -71,13 +71,6 @@ export default function Dashboard() {
                 >
                   <p className="font-medium">Claims</p>
                   <p className="text-sm text-muted-foreground">Bekijk actieve claims</p>
-                </a>
-                <a
-                  href="/werkplaats"
-                  className="block p-3 rounded-md bg-primary/10 hover:bg-primary/20 transition-colors"
-                >
-                  <p className="font-medium">Werkplaats</p>
-                  <p className="text-sm text-muted-foreground">Werkplaats overzicht</p>
                 </a>
               </div>
             </CardContent>
