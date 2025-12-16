@@ -20,6 +20,8 @@ import {
   useCreateClaim,
   useReleaseClaim
 } from '../hooks/usePlateStock'
+import { ProjectPhaseCombobox } from './ProjectPhaseCombobox'
+import { useProject } from '../hooks/useProjects'
 import type { PlateWithRelations } from '../types/database'
 import { Package, Zap, ArrowLeft, Trash2, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -44,10 +46,13 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
   const [notes, setNotes] = useState('')
 
   // Claim form state
-  const [projectNaam, setProjectNaam] = useState('')
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [projectFase, setProjectFase] = useState('')
   const [m2Geclaimd, setM2Geclaimd] = useState('')
   const [claimNotes, setClaimNotes] = useState('')
+
+  // Fetch selected project details
+  const { data: selectedProject } = useProject(selectedProjectId || undefined)
 
   // Mutations
   const updatePlate = useUpdatePlate()
@@ -136,17 +141,22 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
   const handleCreateClaim = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (!selectedProject) {
+      toast.error('Selecteer eerst een project')
+      return
+    }
+
     try {
       await createClaim.mutateAsync({
         plate_id: plate.id,
-        project_naam: projectNaam,
+        project_naam: selectedProject.code,
         project_fase: projectFase,
         m2_geclaimd: m2Geclaimd ? parseFloat(m2Geclaimd) : undefined,
         notes: claimNotes || undefined
       })
 
       // Reset form
-      setProjectNaam('')
+      setSelectedProjectId('')
       setProjectFase('')
       setM2Geclaimd('')
       setClaimNotes('')
@@ -387,44 +397,44 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleCreateClaim} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="project_naam">Project Naam *</Label>
-                        <Input
-                          id="project_naam"
-                          placeholder="Bijv. STAGR"
-                          value={projectNaam}
-                          onChange={(e) => setProjectNaam(e.target.value.toUpperCase())}
-                          required
+                        <Label htmlFor="project">Project *</Label>
+                        <ProjectPhaseCombobox
+                          value={selectedProjectId}
+                          onValueChange={setSelectedProjectId}
+                          placeholder="Selecteer project..."
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="project_fase">Fase *</Label>
-                        <Input
-                          id="project_fase"
-                          placeholder="001"
-                          maxLength={3}
-                          pattern="\d{3}"
-                          value={projectFase}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, '')
-                            setProjectFase(value)
-                          }}
-                          required
-                        />
-                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="project_fase">Fase *</Label>
+                          <Input
+                            id="project_fase"
+                            placeholder="001"
+                            maxLength={3}
+                            pattern="\d{3}"
+                            value={projectFase}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '')
+                              setProjectFase(value)
+                            }}
+                            required
+                          />
+                        </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="m2_geclaimd">M² Geclaimd</Label>
-                        <Input
-                          id="m2_geclaimd"
-                          type="number"
-                          step="0.01"
-                          placeholder={`Max ${calculateArea()} m²`}
-                          value={m2Geclaimd}
-                          onChange={(e) => setM2Geclaimd(e.target.value)}
-                        />
+                        <div className="space-y-2">
+                          <Label htmlFor="m2_geclaimd">M² Geclaimd</Label>
+                          <Input
+                            id="m2_geclaimd"
+                            type="number"
+                            step="0.01"
+                            placeholder={`Max ${calculateArea()} m²`}
+                            value={m2Geclaimd}
+                            onChange={(e) => setM2Geclaimd(e.target.value)}
+                          />
+                        </div>
                       </div>
                     </div>
 
