@@ -22,6 +22,7 @@ import {
 } from '../hooks/usePlateStock'
 import { ProjectPhaseCombobox } from './ProjectPhaseCombobox'
 import { useProject } from '../hooks/useProjects'
+import { useAuth } from '../hooks/useAuth'
 import type { PlateWithRelations } from '../types/database'
 import { Package, Zap, ArrowLeft, Trash2, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -43,6 +44,9 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
   const [projectFase, setProjectFase] = useState('')
   const [m2Geclaimd, setM2Geclaimd] = useState('')
   const [claimNotes, setClaimNotes] = useState('')
+
+  // Get current user for role-based access
+  const { user } = useAuth()
 
   // Fetch selected project details
   const { data: selectedProject } = useProject(selectedProjectId || undefined)
@@ -349,7 +353,8 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
 
             {/* Action Buttons */}
             <div className="flex gap-2 justify-end pb-4">
-              {plate.status !== 'bij_laser' ? (
+              {/* Naar Laser button - Only for werkplaats role */}
+              {user?.role === 'werkplaats' && plate.status !== 'bij_laser' && (
                 <Button
                   variant="outline"
                   onClick={handleNaarLaser}
@@ -359,7 +364,10 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
                   <Zap className="h-4 w-4 mr-2" />
                   Naar Laser
                 </Button>
-              ) : (
+              )}
+
+              {/* Van Laser button - Only for werkplaats role */}
+              {user?.role === 'werkplaats' && plate.status === 'bij_laser' && (
                 <Button
                   variant="outline"
                   onClick={handleVanLaser}
@@ -371,6 +379,7 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
                 </Button>
               )}
 
+              {/* Consumeren button - Available to all roles with permission */}
               <Button
                 variant="destructive"
                 onClick={handleConsume}
