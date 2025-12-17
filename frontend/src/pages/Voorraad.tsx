@@ -9,13 +9,6 @@ import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent } from '../components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select'
 import { Tooltip } from '../components/ui/tooltip'
 import {
   Table,
@@ -32,7 +25,7 @@ import { PlateCard } from '../components/PlateCard'
 import { ColumnFilter } from '../components/ColumnFilter'
 import { usePlates } from '../hooks/usePlateStock'
 import type { PlateWithRelations } from '../types/database'
-import { Plus, Package, Loader2, Search, X, ArrowUpDown, ArrowUp, ArrowDown, LayoutGrid, List } from 'lucide-react'
+import { Plus, Package, Loader2, Search, X, LayoutGrid, List } from 'lucide-react'
 
 export function Voorraad() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -44,13 +37,7 @@ export function Voorraad() {
   // View mode
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
 
-  // Filters
-  const [materialFilter, setMaterialFilter] = useState<string>('all')
-  const [qualityFilter, setQualityFilter] = useState<string>('all')
-  const [surfaceFilter, setSurfaceFilter] = useState<string>('all')
-  const [thicknessFilter, setThicknessFilter] = useState<string>('all')
-
-  // Column filters (Phase 4)
+  // Column filters
   const [columnFilters, setColumnFilters] = useState({
     plaatnummer: '',
     status: '',
@@ -62,25 +49,70 @@ export function Voorraad() {
     locatie: ''
   })
 
-  // Sort
-  const [sortBy, setSortBy] = useState<'none' | 'size' | 'thickness'>('none')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
-
   const { data: plates, isLoading } = usePlates({ include_consumed: false })
 
-  // Extract unique filter values
-  const filterOptions = useMemo(() => {
-    if (!plates) return { materials: [], qualities: [], surfaces: [], thicknesses: [] }
+  // Helper functions (must be before filteredPlates useMemo)
+  // Format status text
+  const formatStatus = (status: string) => {
+    switch (status) {
+      case 'beschikbaar': return 'Beschikbaar'
+      case 'geclaimd': return 'Geclaimd'
+      case 'bij_laser': return 'Bij Laser'
+      default: return status
+    }
+  }
 
-    const materials = Array.from(new Set(plates.map(p => p.material?.naam || p.material_prefix).filter(Boolean))).sort()
-    const qualities = Array.from(new Set(plates.map(p => p.quality))).sort()
-    const surfaces = Array.from(new Set(plates.map(p => p.material?.oppervlaktebewerking).filter(Boolean))).sort()
-    const thicknesses = Array.from(new Set(plates.map(p => p.thickness))).sort((a, b) => a - b)
+  // Get status badge styling (subtle Linear-style)
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'beschikbaar':
+        return { variant: 'outline' as const, className: 'border-green-200 bg-green-50 text-green-700 hover:bg-green-50' }
+      case 'geclaimd':
+        return { variant: 'outline' as const, className: 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50' }
+      case 'bij_laser':
+        return { variant: 'outline' as const, className: 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50' }
+      default:
+        return { variant: 'outline' as const, className: '' }
+    }
+  }
 
-    return { materials, qualities, surfaces, thicknesses }
+  // Calculate area for a plate
+  const calculateArea = (plate: PlateWithRelations) => {
+    return ((plate.width * plate.length) / 1_000_000).toFixed(2)
+  }
+
+  // Extract unique values for column filter suggestions
+  const columnOptions = useMemo(() => {
+    if (!plates) return {
+      plaatnummers: [],
+      statuses: [],
+      claims: [],
+      materialen: [],
+      specificaties: [],
+      afmetingen: [],
+      diktes: [],
+      locaties: []
+    }
+
+    const plaatnummers = Array.from(new Set(plates.map(p => p.plate_number))).sort()
+    const statuses = Array.from(new Set(plates.map(p => formatStatus(p.status)))).sort()
+    const claims = Array.from(new Set(
+      plates.flatMap(p =>
+        (p.claims || [])
+          .filter(c => c.actief)
+          .map(c => `${c.project_naam}-${c.project_fase}`)
+      )
+    )).sort()
+    const materialen = Array.from(new Set(plates.map(p => p.material?.naam || p.material_prefix))).sort()
+    const specificaties = Array.from(new Set(plates.map(p => p.quality))).sort()
+    const afmetingen = Array.from(new Set(plates.map(p => `${p.width} × ${p.length}`))).sort()
+    const diktes = Array.from(new Set(plates.map(p => `${p.thickness}`))).sort((a, b) => parseFloat(a) - parseFloat(b))
+    const locaties = Array.from(new Set(plates.map(p => p.location).filter(Boolean) as string[])).sort()
+
+    return { plaatnummers, statuses, claims, materialen, specificaties, afmetingen, diktes, locaties }
   }, [plates])
 
-  // Filter and sort plates
+  // Filter plates
   const filteredPlates = useMemo(() => {
     if (!plates) return []
 
@@ -100,23 +132,7 @@ export function Voorraad() {
       })
     }
 
-    // Apply filters
-    if (materialFilter !== 'all') {
-      filtered = filtered.filter(p =>
-        (p.material?.naam || p.material_prefix) === materialFilter
-      )
-    }
-    if (qualityFilter !== 'all') {
-      filtered = filtered.filter(p => p.quality === qualityFilter)
-    }
-    if (surfaceFilter !== 'all') {
-      filtered = filtered.filter(p => p.material?.oppervlaktebewerking === surfaceFilter)
-    }
-    if (thicknessFilter !== 'all') {
-      filtered = filtered.filter(p => p.thickness.toString() === thicknessFilter)
-    }
-
-    // Apply column filters (Phase 4)
+    // Apply column filters
     if (columnFilters.plaatnummer) {
       const query = columnFilters.plaatnummer.toLowerCase()
       filtered = filtered.filter(p => p.plate_number.toLowerCase().includes(query))
@@ -161,21 +177,8 @@ export function Voorraad() {
       filtered = filtered.filter(p => (p.location || '').toLowerCase().includes(query))
     }
 
-    // Apply sorting
-    if (sortBy === 'size') {
-      filtered.sort((a, b) => {
-        const areaA = a.width * a.length
-        const areaB = b.width * b.length
-        return sortDirection === 'asc' ? areaA - areaB : areaB - areaA
-      })
-    } else if (sortBy === 'thickness') {
-      filtered.sort((a, b) => {
-        return sortDirection === 'asc' ? a.thickness - b.thickness : b.thickness - a.thickness
-      })
-    }
-
     return filtered
-  }, [plates, searchQuery, materialFilter, qualityFilter, surfaceFilter, thicknessFilter, columnFilters, sortBy, sortDirection])
+  }, [plates, searchQuery, columnFilters])
 
   const handlePlateClick = (plate: PlateWithRelations) => {
     setSelectedPlate(plate)
@@ -189,11 +192,6 @@ export function Voorraad() {
 
   // Clear all filters
   const clearAllFilters = () => {
-    setMaterialFilter('all')
-    setQualityFilter('all')
-    setSurfaceFilter('all')
-    setThicknessFilter('all')
-    setSortBy('none')
     setColumnFilters({
       plaatnummer: '',
       status: '',
@@ -207,48 +205,7 @@ export function Voorraad() {
   }
 
   // Check if any filters are active
-  const hasActiveFilters = materialFilter !== 'all' || qualityFilter !== 'all' ||
-                          surfaceFilter !== 'all' || thicknessFilter !== 'all' || sortBy !== 'none' ||
-                          Object.values(columnFilters).some(v => v !== '')
-
-  // Toggle sort direction
-  const toggleSort = (newSortBy: 'size' | 'thickness') => {
-    if (sortBy === newSortBy) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortBy(newSortBy)
-      setSortDirection('asc')
-    }
-  }
-
-  // Get status badge styling (subtle Linear-style)
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'beschikbaar':
-        return { variant: 'outline' as const, className: 'border-green-200 bg-green-50 text-green-700 hover:bg-green-50' }
-      case 'geclaimd':
-        return { variant: 'outline' as const, className: 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50' }
-      case 'bij_laser':
-        return { variant: 'outline' as const, className: 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50' }
-      default:
-        return { variant: 'outline' as const, className: '' }
-    }
-  }
-
-  // Format status text
-  const formatStatus = (status: string) => {
-    switch (status) {
-      case 'beschikbaar': return 'Beschikbaar'
-      case 'geclaimd': return 'Geclaimd'
-      case 'bij_laser': return 'Bij Laser'
-      default: return status
-    }
-  }
-
-  // Calculate area for a plate
-  const calculateArea = (plate: PlateWithRelations) => {
-    return ((plate.width * plate.length) / 1_000_000).toFixed(2)
-  }
+  const hasActiveFilters = Object.values(columnFilters).some(v => v !== '')
 
   return (
     <Layout>
@@ -313,176 +270,6 @@ export function Voorraad() {
         </div>
       </div>
 
-      {/* Filters Bar */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Material Filter */}
-          <Select value={materialFilter} onValueChange={setMaterialFilter}>
-            <SelectTrigger className="w-[180px] bg-white border-gray-300">
-              <SelectValue placeholder="Materiaal" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle materialen</SelectItem>
-              {filterOptions.materials.map(mat => (
-                <SelectItem key={mat} value={mat}>{mat}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Quality Filter */}
-          <Select value={qualityFilter} onValueChange={setQualityFilter}>
-            <SelectTrigger className="w-[180px] bg-white border-gray-300">
-              <SelectValue placeholder="Specificatie" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle specificaties</SelectItem>
-              {filterOptions.qualities.map(qual => (
-                <SelectItem key={qual} value={qual}>{qual}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Surface Filter */}
-          <Select value={surfaceFilter} onValueChange={setSurfaceFilter}>
-            <SelectTrigger className="w-[200px] bg-white border-gray-300">
-              <SelectValue placeholder="Oppervlaktebewerking" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle bewerkingen</SelectItem>
-              {filterOptions.surfaces.map(surf => (
-                <SelectItem key={surf} value={surf}>{surf}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Thickness Filter */}
-          <Select value={thicknessFilter} onValueChange={setThicknessFilter}>
-            <SelectTrigger className="w-[140px] bg-white border-gray-300">
-              <SelectValue placeholder="Dikte" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alle diktes</SelectItem>
-              {filterOptions.thicknesses.map(thick => (
-                <SelectItem key={thick} value={thick.toString()}>{thick} mm</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Divider */}
-          <div className="h-6 w-px bg-gray-300" />
-
-          {/* Sort by Size */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toggleSort('size')}
-            className={`gap-1 ${sortBy === 'size' ? 'bg-gray-100' : 'bg-white'} border-gray-300`}
-          >
-            Grootte
-            {sortBy === 'size' && (
-              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-            )}
-            {sortBy !== 'size' && <ArrowUpDown className="h-3 w-3 opacity-40" />}
-          </Button>
-
-          {/* Sort by Thickness */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => toggleSort('thickness')}
-            className={`gap-1 ${sortBy === 'thickness' ? 'bg-gray-100' : 'bg-white'} border-gray-300`}
-          >
-            Dikte
-            {sortBy === 'thickness' && (
-              sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-            )}
-            {sortBy !== 'thickness' && <ArrowUpDown className="h-3 w-3 opacity-40" />}
-          </Button>
-
-          {/* Clear All Button */}
-          {hasActiveFilters && (
-            <>
-              <div className="h-6 w-px bg-gray-300" />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAllFilters}
-                className="gap-1 text-gray-600 hover:text-gray-900"
-              >
-                <X className="h-4 w-4" />
-                Wis filters
-              </Button>
-            </>
-          )}
-        </div>
-
-        {/* Active Filter Badges */}
-        {hasActiveFilters && (
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200">
-            {materialFilter !== 'all' && (
-              <Badge
-                variant="outline"
-                className="gap-1 px-2 py-1 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-              >
-                {materialFilter}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setMaterialFilter('all')}
-                />
-              </Badge>
-            )}
-            {qualityFilter !== 'all' && (
-              <Badge
-                variant="outline"
-                className="gap-1 px-2 py-1 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-              >
-                {qualityFilter}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setQualityFilter('all')}
-                />
-              </Badge>
-            )}
-            {surfaceFilter !== 'all' && (
-              <Badge
-                variant="outline"
-                className="gap-1 px-2 py-1 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-              >
-                {surfaceFilter}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setSurfaceFilter('all')}
-                />
-              </Badge>
-            )}
-            {thicknessFilter !== 'all' && (
-              <Badge
-                variant="outline"
-                className="gap-1 px-2 py-1 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-              >
-                {thicknessFilter} mm
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setThicknessFilter('all')}
-                />
-              </Badge>
-            )}
-            {sortBy !== 'none' && (
-              <Badge
-                variant="outline"
-                className="gap-1 px-2 py-1 bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-              >
-                Sorteer: {sortBy === 'size' ? 'Grootte' : 'Dikte'} ({sortDirection === 'asc' ? '↑' : '↓'})
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setSortBy('none')}
-                />
-              </Badge>
-            )}
-          </div>
-        )}
-      </div>
-
       {/* Loading State */}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-12">
@@ -531,6 +318,7 @@ export function Voorraad() {
                       value={columnFilters.plaatnummer}
                       onChange={(v) => updateColumnFilter('plaatnummer', v)}
                       placeholder="Filter..."
+                      options={columnOptions.plaatnummers}
                     />
                   </TableHead>
                   <TableHead className="p-2">
@@ -538,6 +326,7 @@ export function Voorraad() {
                       value={columnFilters.status}
                       onChange={(v) => updateColumnFilter('status', v)}
                       placeholder="Filter..."
+                      options={columnOptions.statuses}
                     />
                   </TableHead>
                   <TableHead className="p-2">
@@ -545,6 +334,7 @@ export function Voorraad() {
                       value={columnFilters.claims}
                       onChange={(v) => updateColumnFilter('claims', v)}
                       placeholder="Filter..."
+                      options={columnOptions.claims}
                     />
                   </TableHead>
                   <TableHead className="p-2">
@@ -552,6 +342,7 @@ export function Voorraad() {
                       value={columnFilters.materiaal}
                       onChange={(v) => updateColumnFilter('materiaal', v)}
                       placeholder="Filter..."
+                      options={columnOptions.materialen}
                     />
                   </TableHead>
                   <TableHead className="p-2">
@@ -559,6 +350,7 @@ export function Voorraad() {
                       value={columnFilters.specificatie}
                       onChange={(v) => updateColumnFilter('specificatie', v)}
                       placeholder="Filter..."
+                      options={columnOptions.specificaties}
                     />
                   </TableHead>
                   <TableHead className="p-2">
@@ -566,6 +358,7 @@ export function Voorraad() {
                       value={columnFilters.afmeting}
                       onChange={(v) => updateColumnFilter('afmeting', v)}
                       placeholder="Filter..."
+                      options={columnOptions.afmetingen}
                     />
                   </TableHead>
                   <TableHead className="p-2">
@@ -573,6 +366,7 @@ export function Voorraad() {
                       value={columnFilters.dikte}
                       onChange={(v) => updateColumnFilter('dikte', v)}
                       placeholder="Filter..."
+                      options={columnOptions.diktes}
                     />
                   </TableHead>
                   <TableHead className="p-2">
@@ -580,6 +374,7 @@ export function Voorraad() {
                       value={columnFilters.locatie}
                       onChange={(v) => updateColumnFilter('locatie', v)}
                       placeholder="Filter..."
+                      options={columnOptions.locaties}
                     />
                   </TableHead>
                 </TableRow>
