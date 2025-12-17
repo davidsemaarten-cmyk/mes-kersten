@@ -208,7 +208,8 @@ export function Voorraad() {
 
   // Check if any filters are active
   const hasActiveFilters = materialFilter !== 'all' || qualityFilter !== 'all' ||
-                          surfaceFilter !== 'all' || thicknessFilter !== 'all' || sortBy !== 'none'
+                          surfaceFilter !== 'all' || thicknessFilter !== 'all' || sortBy !== 'none' ||
+                          Object.values(columnFilters).some(v => v !== '')
 
   // Toggle sort direction
   const toggleSort = (newSortBy: 'size' | 'thickness') => {
@@ -490,29 +491,23 @@ export function Voorraad() {
         </div>
       )}
 
-      {/* Empty State */}
-      {!isLoading && filteredPlates.length === 0 && (
+      {/* Empty State - Only show if NO plates at all AND no filters active */}
+      {!isLoading && plates && plates.length === 0 && !hasActiveFilters && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Package className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold mb-2 text-gray-900">Geen platen gevonden</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              {searchQuery
-                ? 'Probeer een andere zoekopdracht'
-                : 'Voeg platen toe om te beginnen'}
-            </p>
-            {!searchQuery && (
-              <Button onClick={() => setAddModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Eerste Plaat Toevoegen
-              </Button>
-            )}
+            <p className="text-sm text-gray-600 mb-4">Voeg platen toe om te beginnen</p>
+            <Button onClick={() => setAddModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Eerste Plaat Toevoegen
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Plates View - Table or Grid */}
-      {!isLoading && filteredPlates.length > 0 && (
+      {/* Plates View - Table or Grid - Always show if we have plates */}
+      {!isLoading && plates && plates.length > 0 && (
         <>
           {viewMode === 'table' ? (
             <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -590,136 +585,164 @@ export function Voorraad() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPlates.map((plate) => {
-                  const statusStyle = getStatusBadge(plate.status)
-                  const activeClaims = plate.claims?.filter(c => c.actief) || []
+                {filteredPlates.length > 0 ? (
+                  filteredPlates.map((plate) => {
+                    const statusStyle = getStatusBadge(plate.status)
+                    const activeClaims = plate.claims?.filter(c => c.actief) || []
 
-                  return (
-                    <TableRow
-                      key={plate.id}
-                      onClick={() => handlePlateClick(plate)}
-                      className="cursor-pointer hover:bg-gray-50 transition-colors h-14"
-                    >
-                      {/* Plaatnummer */}
-                      <TableCell className="font-medium text-gray-900">
-                        {plate.plate_number}
-                      </TableCell>
+                    return (
+                      <TableRow
+                        key={plate.id}
+                        onClick={() => handlePlateClick(plate)}
+                        className="cursor-pointer hover:bg-gray-50 transition-colors h-14"
+                      >
+                        {/* Plaatnummer */}
+                        <TableCell className="font-medium text-gray-900">
+                          {plate.plate_number}
+                        </TableCell>
 
-                      {/* Status */}
-                      <TableCell>
-                        <Badge variant={statusStyle.variant} className={statusStyle.className}>
-                          {formatStatus(plate.status)}
-                        </Badge>
-                      </TableCell>
+                        {/* Status */}
+                        <TableCell>
+                          <Badge variant={statusStyle.variant} className={statusStyle.className}>
+                            {formatStatus(plate.status)}
+                          </Badge>
+                        </TableCell>
 
-                      {/* Claims */}
-                      <TableCell>
-                        {activeClaims.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {activeClaims.slice(0, 3).map((claim, idx) => (
-                              <Tooltip
-                                key={idx}
-                                delay={100}
-                                content={
-                                  <div className="text-left">
-                                    <div className="font-medium">{claim.project_naam}-{claim.project_fase}</div>
-                                    {claim.m2_geclaimd && <div className="text-gray-300 mt-0.5">{claim.m2_geclaimd} m² geclaimd</div>}
-                                    {claim.opmerkingen && <div className="text-gray-300 mt-0.5">{claim.opmerkingen}</div>}
-                                    <div className="text-gray-400 text-[10px] mt-1">
-                                      {new Date(claim.created_at).toLocaleDateString('nl-NL')}
-                                    </div>
-                                  </div>
-                                }
-                              >
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs px-2 py-0.5 h-6 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-help"
-                                >
-                                  {claim.project_naam}-{claim.project_fase}
-                                </Badge>
-                              </Tooltip>
-                            ))}
-                            {activeClaims.length > 3 && (
-                              <Tooltip
-                                delay={100}
-                                content={
-                                  <div className="text-left space-y-1">
-                                    {activeClaims.slice(3).map((claim, idx) => (
-                                      <div key={idx} className="text-xs">
-                                        {claim.project_naam}-{claim.project_fase}
+                        {/* Claims */}
+                        <TableCell>
+                          {activeClaims.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {activeClaims.slice(0, 3).map((claim, idx) => (
+                                <Tooltip
+                                  key={idx}
+                                  delay={100}
+                                  content={
+                                    <div className="text-left">
+                                      <div className="font-medium">{claim.project_naam}-{claim.project_fase}</div>
+                                      {claim.m2_geclaimd && <div className="text-gray-300 mt-0.5">{claim.m2_geclaimd} m² geclaimd</div>}
+                                      {claim.opmerkingen && <div className="text-gray-300 mt-0.5">{claim.opmerkingen}</div>}
+                                      <div className="text-gray-400 text-[10px] mt-1">
+                                        {new Date(claim.created_at).toLocaleDateString('nl-NL')}
                                       </div>
-                                    ))}
-                                  </div>
-                                }
-                              >
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs px-2 py-0.5 h-6 border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors cursor-help"
+                                    </div>
+                                  }
                                 >
-                                  +{activeClaims.length - 3}
-                                </Badge>
-                              </Tooltip>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-400">-</span>
-                        )}
-                      </TableCell>
-
-                      {/* Materiaal */}
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {plate.material?.kleur && (
-                            <div
-                              className="w-2 h-2 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: plate.material.kleur }}
-                            />
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs px-2 py-0.5 h-6 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-help"
+                                  >
+                                    {claim.project_naam}-{claim.project_fase}
+                                  </Badge>
+                                </Tooltip>
+                              ))}
+                              {activeClaims.length > 3 && (
+                                <Tooltip
+                                  delay={100}
+                                  content={
+                                    <div className="text-left space-y-1">
+                                      {activeClaims.slice(3).map((claim, idx) => (
+                                        <div key={idx} className="text-xs">
+                                          {claim.project_naam}-{claim.project_fase}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  }
+                                >
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs px-2 py-0.5 h-6 border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors cursor-help"
+                                  >
+                                    +{activeClaims.length - 3}
+                                  </Badge>
+                                </Tooltip>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
                           )}
-                          <span className="text-sm text-gray-900">
-                            {plate.material?.naam || plate.material_prefix}
+                        </TableCell>
+
+                        {/* Materiaal */}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {plate.material?.kleur && (
+                              <div
+                                className="w-2 h-2 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: plate.material.kleur }}
+                              />
+                            )}
+                            <span className="text-sm text-gray-900">
+                              {plate.material?.naam || plate.material_prefix}
+                            </span>
+                          </div>
+                        </TableCell>
+
+                        {/* Specificatie */}
+                        <TableCell className="text-sm text-gray-600">
+                          {plate.quality}
+                        </TableCell>
+
+                        {/* Afmetingen */}
+                        <TableCell className="text-sm text-gray-600">
+                          {plate.width} × {plate.length} mm
+                          <span className="text-gray-400 ml-2">
+                            ({calculateArea(plate)} m²)
                           </span>
-                        </div>
-                      </TableCell>
+                        </TableCell>
 
-                      {/* Specificatie */}
-                      <TableCell className="text-sm text-gray-600">
-                        {plate.quality}
-                      </TableCell>
+                        {/* Dikte */}
+                        <TableCell className="text-sm text-gray-600">
+                          {plate.thickness} mm
+                        </TableCell>
 
-                      {/* Afmetingen */}
-                      <TableCell className="text-sm text-gray-600">
-                        {plate.width} × {plate.length} mm
-                        <span className="text-gray-400 ml-2">
-                          ({calculateArea(plate)} m²)
-                        </span>
-                      </TableCell>
-
-                      {/* Dikte */}
-                      <TableCell className="text-sm text-gray-600">
-                        {plate.thickness} mm
-                      </TableCell>
-
-                      {/* Locatie */}
-                      <TableCell className="text-sm text-gray-600">
-                        {plate.location || '-'}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+                        {/* Locatie */}
+                        <TableCell className="text-sm text-gray-600">
+                          {plate.location || '-'}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-500">
+                        <Package className="h-8 w-8 mb-2 text-gray-400" />
+                        <p className="font-medium">Geen platen gevonden</p>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Probeer een andere zoekopdracht of filter
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
                 </Table>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredPlates.map((plate) => (
-                <PlateCard
-                  key={plate.id}
-                  plate={plate}
-                  onClick={() => handlePlateClick(plate)}
-                />
-              ))}
-            </div>
+            <>
+              {filteredPlates.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredPlates.map((plate) => (
+                    <PlateCard
+                      key={plate.id}
+                      plate={plate}
+                      onClick={() => handlePlateClick(plate)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Package className="h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-semibold mb-2 text-gray-900">Geen platen gevonden</h3>
+                    <p className="text-sm text-gray-600">
+                      Probeer een andere zoekopdracht of filter
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </>
       )}
