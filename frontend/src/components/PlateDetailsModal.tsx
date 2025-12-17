@@ -181,156 +181,253 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <div
-              className="w-1 h-8 rounded"
-              style={{ backgroundColor: plate.material?.kleur || '#gray' }}
-            />
-            {plate.plate_number}
-            <Badge variant={plate.status === 'beschikbaar' ? 'default' : plate.status === 'geclaimd' ? 'secondary' : 'destructive'}>
+      <DialogContent className="sm:max-w-[700px] p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <DialogHeader className="px-8 pt-8 pb-6 border-b border-gray-200">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-1 h-10 rounded-full"
+                style={{ backgroundColor: plate.material?.kleur || '#6B7280' }}
+              />
+              <div>
+                <DialogTitle className="text-xl font-semibold text-gray-900">
+                  {plate.plate_number}
+                </DialogTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                  {plate.material?.naam || plate.material_prefix}
+                </p>
+              </div>
+            </div>
+            <Badge
+              variant="outline"
+              className={
+                plate.status === 'beschikbaar'
+                  ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-50'
+                  : plate.status === 'geclaimd'
+                  ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50'
+                  : 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50'
+              }
+            >
               {plate.status === 'beschikbaar' ? 'Beschikbaar' : plate.status === 'geclaimd' ? 'Geclaimd' : 'Bij Laser'}
             </Badge>
-          </DialogTitle>
+          </div>
         </DialogHeader>
 
-        <Tabs defaultValue="informatie" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="informatie">Informatie</TabsTrigger>
-            <TabsTrigger value="claims">
+        {/* Tabs */}
+        <Tabs defaultValue="informatie" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="grid w-full grid-cols-3 rounded-none border-b border-gray-200 bg-transparent h-12 px-8">
+            <TabsTrigger
+              value="informatie"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none"
+            >
+              Informatie
+            </TabsTrigger>
+            <TabsTrigger
+              value="claims"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none"
+            >
               Claims {activeClaims.length > 0 && `(${activeClaims.length})`}
             </TabsTrigger>
-            <TabsTrigger value="geschiedenis">Geschiedenis</TabsTrigger>
+            <TabsTrigger
+              value="geschiedenis"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none"
+            >
+              Geschiedenis
+            </TabsTrigger>
           </TabsList>
 
           {/* INFORMATIE TAB */}
-          <TabsContent value="informatie" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {/* Material Info (Read-only) */}
-              <div className="space-y-2">
-                <Label>Materiaal</Label>
-                <Input value={plate.material?.naam || plate.material_prefix} disabled />
+          <TabsContent value="informatie" className="flex-1 overflow-y-auto px-8 py-6 space-y-6 m-0">
+            {/* Specifications Section */}
+            <section>
+              <h3 className="text-sm font-medium text-gray-500 mb-4">Specificaties</h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-gray-500">Kwaliteit</Label>
+                  <Input
+                    id="quality"
+                    value={quality}
+                    onChange={(e) => setQuality(e.target.value)}
+                    disabled={!isEditing}
+                    className="h-10 border-gray-200 focus:border-blue-400"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-gray-500">Plaatnummer</Label>
+                  <Input
+                    value={plate.plate_number}
+                    disabled
+                    className="h-10 bg-gray-50 border-gray-200"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <div className="border-t border-gray-200" />
+
+            {/* Dimensions Section */}
+            <section>
+              <h3 className="text-sm font-medium text-gray-500 mb-4">Afmetingen</h3>
+              <div className="grid grid-cols-3 gap-x-4 gap-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="width" className="text-xs font-medium text-gray-500">Breedte</Label>
+                  <div className="relative">
+                    <Input
+                      id="width"
+                      type="number"
+                      value={width}
+                      onChange={(e) => setWidth(e.target.value)}
+                      disabled={!isEditing}
+                      className="h-10 pr-12 border-gray-200 focus:border-blue-400"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">mm</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="length" className="text-xs font-medium text-gray-500">Lengte</Label>
+                  <div className="relative">
+                    <Input
+                      id="length"
+                      type="number"
+                      value={length}
+                      onChange={(e) => setLength(e.target.value)}
+                      disabled={!isEditing}
+                      className="h-10 pr-12 border-gray-200 focus:border-blue-400"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">mm</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="thickness" className="text-xs font-medium text-gray-500">Dikte</Label>
+                  <div className="relative">
+                    <Input
+                      id="thickness"
+                      type="number"
+                      step="0.1"
+                      value={thickness}
+                      onChange={(e) => setThickness(e.target.value)}
+                      disabled={!isEditing}
+                      className="h-10 pr-12 border-gray-200 focus:border-blue-400"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">mm</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Plaatnummer</Label>
-                <Input value={plate.plate_number} disabled />
-              </div>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 mt-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="weight" className="text-xs font-medium text-gray-500">Gewicht</Label>
+                  <div className="relative">
+                    <Input
+                      id="weight"
+                      type="number"
+                      step="0.01"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                      disabled={!isEditing}
+                      placeholder="Optioneel"
+                      className="h-10 pr-12 border-gray-200 focus:border-blue-400"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">kg</span>
+                  </div>
+                </div>
 
-              {/* Editable Fields */}
-              <div className="space-y-2">
-                <Label htmlFor="quality">Kwaliteit</Label>
-                <Input
-                  id="quality"
-                  value={quality}
-                  onChange={(e) => setQuality(e.target.value)}
-                  disabled={!isEditing}
-                />
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-gray-500">Oppervlakte</Label>
+                  <div className="h-10 px-3 flex items-center bg-gray-50 border border-gray-200 rounded-md">
+                    <span className="text-sm text-gray-900 font-medium">{calculateArea()} m²</span>
+                  </div>
+                </div>
               </div>
+            </section>
 
-              <div className="space-y-2">
-                <Label htmlFor="thickness">Dikte (mm)</Label>
-                <Input
-                  id="thickness"
-                  type="number"
-                  step="0.1"
-                  value={thickness}
-                  onChange={(e) => setThickness(e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
+            <div className="border-t border-gray-200" />
 
-              <div className="space-y-2">
-                <Label htmlFor="width">Breedte (mm)</Label>
-                <Input
-                  id="width"
-                  type="number"
-                  value={width}
-                  onChange={(e) => setWidth(e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="length">Lengte (mm)</Label>
-                <Input
-                  id="length"
-                  type="number"
-                  value={length}
-                  onChange={(e) => setLength(e.target.value)}
-                  disabled={!isEditing}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="weight">Gewicht (kg)</Label>
-                <Input
-                  id="weight"
-                  type="number"
-                  step="0.01"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  disabled={!isEditing}
-                  placeholder="Optioneel"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">Locatie</Label>
+            {/* Location Section */}
+            <section>
+              <h3 className="text-sm font-medium text-gray-500 mb-4">Locatie</h3>
+              <div className="space-y-1.5">
+                <Label htmlFor="location" className="text-xs font-medium text-gray-500">Huidige locatie</Label>
                 <Input
                   id="location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   disabled={!isEditing || plate.status === 'bij_laser'}
+                  className="h-10 border-gray-200 focus:border-blue-400"
+                  placeholder="Bijvoorbeeld: Lade 1"
                 />
               </div>
-            </div>
+            </section>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notities</Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                disabled={!isEditing}
-                rows={3}
-              />
-            </div>
+            <div className="border-t border-gray-200" />
 
-            {/* Calculated Info */}
-            <Card>
-              <CardContent className="pt-4">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Oppervlakte</p>
-                    <p className="font-semibold">{calculateArea()} m²</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Aangemaakt door</p>
-                    <p className="font-semibold">{plate.creator?.full_name || 'Onbekend'}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Aangemaakt op</p>
-                    <p className="font-semibold">
-                      {new Date(plate.created_at).toLocaleDateString('nl-NL')}
-                    </p>
-                  </div>
+            {/* Notes Section */}
+            <section>
+              <h3 className="text-sm font-medium text-gray-500 mb-4">Notities</h3>
+              <div className="space-y-1.5">
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  disabled={!isEditing}
+                  rows={3}
+                  className="resize-none border-gray-200 focus:border-blue-400"
+                  placeholder="Voeg notities toe..."
+                />
+              </div>
+            </section>
+
+            <div className="border-t border-gray-200" />
+
+            {/* Metadata Section */}
+            <section>
+              <h3 className="text-sm font-medium text-gray-500 mb-4">Metadata</h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <div>
+                  <p className="text-xs font-medium text-gray-500">Aangemaakt door</p>
+                  <p className="text-sm text-gray-900 mt-1">{plate.creator?.full_name || 'Onbekend'}</p>
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <p className="text-xs font-medium text-gray-500">Aangemaakt op</p>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {new Date(plate.created_at).toLocaleDateString('nl-NL', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+            </section>
 
             {/* Action Buttons */}
-            <div className="flex gap-2 justify-between pt-4">
+            <div className="flex gap-3 justify-between pt-2 pb-4">
               <div className="flex gap-2">
                 {!isEditing ? (
-                  <Button onClick={() => setIsEditing(true)}>Bewerken</Button>
+                  <Button
+                    onClick={() => setIsEditing(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Bewerken
+                  </Button>
                 ) : (
                   <>
-                    <Button onClick={handleSave} disabled={updatePlate.isPending}>
+                    <Button
+                      onClick={handleSave}
+                      disabled={updatePlate.isPending}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
                       {updatePlate.isPending ? 'Opslaan...' : 'Opslaan'}
                     </Button>
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                      className="border-gray-300 hover:bg-gray-50"
+                    >
                       Annuleren
                     </Button>
                   </>
@@ -343,8 +440,9 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
                     variant="outline"
                     onClick={handleNaarLaser}
                     disabled={moveToLaser.isPending || plate.is_consumed}
+                    className="border-gray-300 hover:bg-gray-50"
                   >
-                    <Zap className="h-4 w-4 mr-1" />
+                    <Zap className="h-4 w-4 mr-2" />
                     Naar Laser
                   </Button>
                 ) : (
@@ -352,8 +450,9 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
                     variant="outline"
                     onClick={handleVanLaser}
                     disabled={moveFromLaser.isPending}
+                    className="border-gray-300 hover:bg-gray-50"
                   >
-                    <ArrowLeft className="h-4 w-4 mr-1" />
+                    <ArrowLeft className="h-4 w-4 mr-2" />
                     Van Laser
                   </Button>
                 )}
@@ -362,8 +461,9 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
                   variant="destructive"
                   onClick={handleConsume}
                   disabled={consumePlate.isPending || plate.is_consumed}
+                  className="bg-red-600 hover:bg-red-700"
                 >
-                  <Package className="h-4 w-4 mr-1" />
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Consumeren
                 </Button>
               </div>
@@ -371,7 +471,7 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
           </TabsContent>
 
           {/* CLAIMS TAB */}
-          <TabsContent value="claims" className="space-y-4">
+          <TabsContent value="claims" className="flex-1 overflow-y-auto px-8 py-6 space-y-6 m-0">
             {/* Add Claim Button */}
             {!showClaimForm && (
               <Button onClick={() => setShowClaimForm(true)} className="w-full">
@@ -543,9 +643,13 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
           </TabsContent>
 
           {/* GESCHIEDENIS TAB */}
-          <TabsContent value="geschiedenis" className="space-y-4">
-            <div className="text-center text-muted-foreground py-8">
-              <p>Audit trail komt binnenkort beschikbaar</p>
+          <TabsContent value="geschiedenis" className="flex-1 overflow-y-auto px-8 py-6 m-0">
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <Package className="h-6 w-6 text-gray-400" />
+              </div>
+              <p className="text-sm font-medium text-gray-900 mb-1">Audit trail komt binnenkort</p>
+              <p className="text-sm text-gray-500">De geschiedenis van deze plaat wordt hier weergegeven</p>
             </div>
           </TabsContent>
         </Tabs>
