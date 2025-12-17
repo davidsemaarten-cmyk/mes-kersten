@@ -25,7 +25,9 @@ import { PlateCard } from '../components/PlateCard'
 import { ColumnFilter } from '../components/ColumnFilter'
 import { usePlates } from '../hooks/usePlateStock'
 import type { PlateWithRelations } from '../types/database'
-import { Plus, Package, Loader2, Search, X, LayoutGrid, List } from 'lucide-react'
+import { Plus, Package, Loader2, Search, X, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+
+type SortDirection = 'asc' | 'desc' | null
 
 export function Voorraad() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -36,6 +38,9 @@ export function Voorraad() {
 
   // View mode
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
+
+  // Sort state for thickness column
+  const [thicknessSortDirection, setThicknessSortDirection] = useState<SortDirection>(null)
 
   // Column filters
   const [columnFilters, setColumnFilters] = useState({
@@ -79,6 +84,22 @@ export function Voorraad() {
   // Calculate area for a plate
   const calculateArea = (plate: PlateWithRelations) => {
     return ((plate.width * plate.length) / 1_000_000).toFixed(2)
+  }
+
+  // Toggle thickness sort direction: null → desc → asc → null
+  const toggleThicknessSort = () => {
+    setThicknessSortDirection((current) => {
+      if (current === null) return 'desc'
+      if (current === 'desc') return 'asc'
+      return null
+    })
+  }
+
+  // Get sort icon component
+  const ThicknessSortIcon = () => {
+    if (thicknessSortDirection === 'desc') return <ArrowDown className="h-4 w-4 ml-1" />
+    if (thicknessSortDirection === 'asc') return <ArrowUp className="h-4 w-4 ml-1" />
+    return <ArrowUpDown className="h-4 w-4 ml-1 opacity-40" />
   }
 
   // Extract unique values for column filter suggestions
@@ -177,8 +198,22 @@ export function Voorraad() {
       filtered = filtered.filter(p => (p.location || '').toLowerCase().includes(query))
     }
 
+    // Apply sorting (after filtering)
+    if (thicknessSortDirection) {
+      filtered.sort((a, b) => {
+        const thicknessA = a.thickness || 0
+        const thicknessB = b.thickness || 0
+
+        if (thicknessSortDirection === 'desc') {
+          return thicknessB - thicknessA // Thick to thin
+        } else {
+          return thicknessA - thicknessB // Thin to thick
+        }
+      })
+    }
+
     return filtered
-  }, [plates, searchQuery, columnFilters])
+  }, [plates, searchQuery, columnFilters, thicknessSortDirection])
 
   const handlePlateClick = (plate: PlateWithRelations) => {
     setSelectedPlate(plate)
@@ -202,10 +237,11 @@ export function Voorraad() {
       dikte: '',
       locatie: ''
     })
+    setThicknessSortDirection(null)
   }
 
   // Check if any filters are active
-  const hasActiveFilters = Object.values(columnFilters).some(v => v !== '')
+  const hasActiveFilters = Object.values(columnFilters).some(v => v !== '') || thicknessSortDirection !== null
 
   return (
     <Layout>
@@ -308,7 +344,32 @@ export function Voorraad() {
                   <TableHead className="font-semibold text-gray-900">Materiaal</TableHead>
                   <TableHead className="font-semibold text-gray-900">Specificatie</TableHead>
                   <TableHead className="font-semibold text-gray-900">Afmetingen</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Dikte</TableHead>
+                  <TableHead
+                    className={`font-semibold cursor-pointer select-none hover:bg-gray-100 transition-colors ${
+                      thicknessSortDirection ? 'text-blue-700' : 'text-gray-900'
+                    }`}
+                    onClick={toggleThicknessSort}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        toggleThicknessSort()
+                      }
+                    }}
+                    aria-label={`Sorteer op dikte ${
+                      thicknessSortDirection === 'desc'
+                        ? 'dik naar dun'
+                        : thicknessSortDirection === 'asc'
+                        ? 'dun naar dik'
+                        : 'ongesorteerd'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      Dikte
+                      <ThicknessSortIcon />
+                    </div>
+                  </TableHead>
                   <TableHead className="font-semibold text-gray-900">Locatie</TableHead>
                 </TableRow>
                 {/* Filter Row */}
