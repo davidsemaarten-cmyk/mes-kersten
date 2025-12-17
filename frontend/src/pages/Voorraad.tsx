@@ -95,10 +95,14 @@ export function Voorraad() {
     })
   }
 
-  // Get sort icon component
-  const ThicknessSortIcon = () => {
-    if (thicknessSortDirection === 'desc') return <ArrowDown className="h-4 w-4 ml-1" />
-    if (thicknessSortDirection === 'asc') return <ArrowUp className="h-4 w-4 ml-1" />
+  // Get sort icon based on current sort direction
+  const getSortIcon = () => {
+    if (thicknessSortDirection === 'desc') {
+      return <ArrowDown className="h-4 w-4 ml-1" />
+    }
+    if (thicknessSortDirection === 'asc') {
+      return <ArrowUp className="h-4 w-4 ml-1" />
+    }
     return <ArrowUpDown className="h-4 w-4 ml-1 opacity-40" />
   }
 
@@ -348,12 +352,17 @@ export function Voorraad() {
                     className={`font-semibold cursor-pointer select-none hover:bg-gray-100 transition-colors ${
                       thicknessSortDirection ? 'text-blue-700' : 'text-gray-900'
                     }`}
-                    onClick={toggleThicknessSort}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      toggleThicknessSort()
+                    }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
+                        e.stopPropagation()
                         toggleThicknessSort()
                       }
                     }}
@@ -367,7 +376,7 @@ export function Voorraad() {
                   >
                     <div className="flex items-center">
                       Dikte
-                      <ThicknessSortIcon />
+                      {getSortIcon()}
                     </div>
                   </TableHead>
                   <TableHead className="font-semibold text-gray-900">Locatie</TableHead>
