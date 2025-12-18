@@ -14,17 +14,17 @@ import { Badge } from './ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import {
   useUpdatePlate,
-  useMoveToLaser,
   useMoveFromLaser,
   useConsumePlate,
   useCreateClaim,
   useReleaseClaim
 } from '../hooks/usePlateStock'
 import { ProjectPhaseCombobox } from './ProjectPhaseCombobox'
+import { FaseCombobox } from './FaseCombobox'
 import { useProject } from '../hooks/useProjects'
 import { useAuth } from '../hooks/useAuth'
 import type { PlateWithRelations } from '../types/database'
-import { Package, Zap, ArrowLeft, Trash2, Plus, X } from 'lucide-react'
+import { Package, ArrowLeft, Trash2, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface PlateDetailsModalProps {
@@ -53,7 +53,6 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
 
   // Mutations
   const updatePlate = useUpdatePlate()
-  const moveToLaser = useMoveToLaser()
   const moveFromLaser = useMoveFromLaser()
   const consumePlate = useConsumePlate()
   const createClaim = useCreateClaim()
@@ -83,17 +82,6 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
       toast.success('Notities opgeslagen')
     } catch (error) {
       // Error handled by mutation
-    }
-  }
-
-  const handleNaarLaser = async () => {
-    if (confirm('Deze plaat naar laser verplaatsen?')) {
-      try {
-        await moveToLaser.mutateAsync(plate.id)
-        onClose()
-      } catch (error) {
-        // Error handled by mutation
-      }
     }
   }
 
@@ -353,19 +341,6 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
 
             {/* Action Buttons */}
             <div className="flex gap-2 justify-end pb-4">
-              {/* Naar Laser button - Only for werkplaats role */}
-              {user?.role === 'werkplaats' && plate.status !== 'bij_laser' && (
-                <Button
-                  variant="outline"
-                  onClick={handleNaarLaser}
-                  disabled={moveToLaser.isPending || plate.is_consumed}
-                  className="border-gray-300 hover:bg-gray-50"
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  Naar Laser
-                </Button>
-              )}
-
               {/* Van Laser button - Only for werkplaats role */}
               {user?.role === 'werkplaats' && plate.status === 'bij_laser' && (
                 <Button
@@ -432,17 +407,12 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="project_fase">Fase *</Label>
-                          <Input
-                            id="project_fase"
-                            placeholder="001"
-                            maxLength={3}
-                            pattern="\d{3}"
+                          <FaseCombobox
+                            projectId={selectedProjectId}
                             value={projectFase}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, '')
-                              setProjectFase(value)
-                            }}
-                            required
+                            onValueChange={setProjectFase}
+                            placeholder="Selecteer fase..."
+                            disabled={!selectedProjectId}
                           />
                         </div>
 

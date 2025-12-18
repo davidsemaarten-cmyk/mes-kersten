@@ -62,7 +62,18 @@
       "Bash(cd D:ProjectenWeb Developmentmes-kerstenbackend)",
       "Bash(venvScriptspython -c \"import main\")",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git rm:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(git commit:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill /F /PID 2424)",
+      "Bash(python main.py:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(netstat:*)",
+      "Skill(llm-application-dev:prompt-engineering-patterns)"
     ],
     "deny": [],
     "ask": []

@@ -14,6 +14,7 @@ from .order import Order
 from .posnummer import Posnummer
 from .order_posnummer import OrderPosnummer
 from .audit_log import AuditLog
+from .storage_location import StorageLocation
 
 __all__ = [
     "User",
@@ -29,4 +30,5 @@ __all__ = [
     "Posnummer",
     "OrderPosnummer",
     "AuditLog",
+    "StorageLocation",
 ]

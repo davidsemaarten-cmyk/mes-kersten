@@ -1,15 +1,18 @@
 /**
  * Voorraad (Inventory) Page
- * Main inventory view for admin and werkvoorbereiders
+ * Main inventory view with dynamic column management
+ * Phase 9: Drag-and-drop columns, show/hide, horizontal scroll
  */
 
 import { useState, useMemo } from 'react'
+import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import Layout from '../components/Layout'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent } from '../components/ui/card'
-import { Tooltip } from '../components/ui/tooltip'
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs'
 import {
   Table,
   TableBody,
@@ -23,11 +26,20 @@ import { BulkClaimModal } from '../components/BulkClaimModal'
 import { PlateDetailsModal } from '../components/PlateDetailsModal'
 import { PlateCard } from '../components/PlateCard'
 import { ColumnFilter } from '../components/ColumnFilter'
+import { LocationReturnButton } from '../components/LocationReturnButton'
+import { RemnantButton } from '../components/RemnantButton'
+import { ConsumeButton } from '../components/ConsumeButton'
+import { NaarLaserButton } from '../components/NaarLaserButton'
+import { ColumnVisibilityPopover } from '../components/ColumnVisibilityPopover'
+import { ScrollableTable } from '../components/ScrollableTable'
+import { DraggableTableHeader } from '../components/DraggableTableHeader'
 import { usePlates } from '../hooks/usePlateStock'
+import { useColumnPreferences } from '../hooks/useColumnPreferences'
 import type { PlateWithRelations } from '../types/database'
 import { Plus, Package, Loader2, Search, X, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 
 type SortDirection = 'asc' | 'desc' | null
+type StatusFilter = 'alle' | 'bij_laser' | 'beschikbaar' | 'geclaimd'
 
 export function Voorraad() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -39,8 +51,22 @@ export function Voorraad() {
   // View mode
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
 
+  // Status tab filter
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('alle')
+
   // Sort state for thickness column
   const [thicknessSortDirection, setThicknessSortDirection] = useState<SortDirection>(null)
+
+  // Column management (Phase 9)
+  const {
+    columns,
+    visibleColumns,
+    toggleColumn,
+    reorderColumns,
+    resetToDefault,
+    visibleCount,
+    totalCount,
+  } = useColumnPreferences('voorraad')
 
   // Column filters
   const [columnFilters, setColumnFilters] = useState({
@@ -137,11 +163,28 @@ export function Voorraad() {
     return { plaatnummers, statuses, claims, materialen, specificaties, afmetingen, diktes, locaties }
   }, [plates])
 
+  // Calculate status counts
+  const statusCounts = useMemo(() => {
+    if (!plates) return { alle: 0, bij_laser: 0, beschikbaar: 0, geclaimd: 0 }
+
+    return {
+      alle: plates.length,
+      bij_laser: plates.filter(p => p.status === 'bij_laser').length,
+      beschikbaar: plates.filter(p => p.status === 'beschikbaar').length,
+      geclaimd: plates.filter(p => p.status === 'geclaimd').length
+    }
+  }, [plates])
+
   // Filter plates
   const filteredPlates = useMemo(() => {
     if (!plates) return []
 
     let filtered = [...plates]
+
+    // Apply status tab filter first
+    if (statusFilter !== 'alle') {
+      filtered = filtered.filter(p => p.status === statusFilter)
+    }
 
     // Apply search query
     if (searchQuery) {
@@ -217,7 +260,7 @@ export function Voorraad() {
     }
 
     return filtered
-  }, [plates, searchQuery, columnFilters, thicknessSortDirection])
+  }, [plates, statusFilter, searchQuery, columnFilters, thicknessSortDirection])
 
   const handlePlateClick = (plate: PlateWithRelations) => {
     setSelectedPlate(plate)
@@ -231,6 +274,7 @@ export function Voorraad() {
 
   // Clear all filters
   const clearAllFilters = () => {
+    setStatusFilter('alle')
     setColumnFilters({
       plaatnummer: '',
       status: '',
@@ -245,7 +289,16 @@ export function Voorraad() {
   }
 
   // Check if any filters are active
-  const hasActiveFilters = Object.values(columnFilters).some(v => v !== '') || thicknessSortDirection !== null
+  const hasActiveFilters = statusFilter !== 'alle' || Object.values(columnFilters).some(v => v !== '') || thicknessSortDirection !== null
+
+  // Handle column drag end (Phase 9)
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      reorderColumns(active.id as string, over.id as string)
+    }
+  }
 
   return (
     <Layout>
@@ -286,6 +339,17 @@ export function Voorraad() {
             </button>
           </div>
 
+          {/* Column Visibility (Phase 9) - Only show in table view */}
+          {viewMode === 'table' && statusFilter !== 'bij_laser' && (
+            <ColumnVisibilityPopover
+              columns={columns}
+              onToggle={toggleColumn}
+              onReset={resetToDefault}
+              visibleCount={visibleCount}
+              totalCount={totalCount}
+            />
+          )}
+
           <Button onClick={() => setBulkClaimModalOpen(true)} variant="outline">
             <Package className="h-4 w-4 mr-2" />
             Bulk Claim
@@ -296,6 +360,36 @@ export function Voorraad() {
           </Button>
         </div>
       </div>
+
+      {/* Status Tabs */}
+      <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+        <TabsList className="w-full justify-start bg-white border border-gray-200">
+          <TabsTrigger value="alle" className="data-[state=active]:bg-gray-100">
+            Alle Platen
+            <Badge variant="secondary" className="ml-2 bg-gray-100 text-gray-700">
+              {statusCounts.alle}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="bij_laser" className="data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">
+            Bij Laser
+            <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-700">
+              {statusCounts.bij_laser}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="beschikbaar" className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700">
+            Beschikbaar
+            <Badge variant="secondary" className="ml-2 bg-green-100 text-green-700">
+              {statusCounts.beschikbaar}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="geclaimd" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
+            Geclaimd
+            <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700">
+              {statusCounts.geclaimd}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Search Bar */}
       <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
@@ -338,238 +432,212 @@ export function Voorraad() {
         <>
           {viewMode === 'table' ? (
             <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-              <div className="overflow-x-auto">
-                <Table>
+              <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <ScrollableTable>
+                  <Table>
               <TableHeader className="bg-gray-50 sticky top-0 z-10">
-                <TableRow className="hover:bg-gray-50">
-                  <TableHead className="font-semibold text-gray-900">Plaatnummer</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Status</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Claims</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Materiaal</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Specificatie</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Afmetingen</TableHead>
-                  <TableHead
-                    className={`font-semibold cursor-pointer select-none hover:bg-gray-100 transition-colors ${
-                      thicknessSortDirection ? 'text-blue-700' : 'text-gray-900'
-                    }`}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      toggleThicknessSort()
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
+                {statusFilter === 'bij_laser' ? (
+                  // Bij Laser: Fixed columns, no drag-and-drop
+                  <TableRow className="hover:bg-gray-50">
+                    <TableHead className="font-semibold text-gray-900">Plaatnummer</TableHead>
+                    <TableHead className="font-semibold text-gray-900">Materiaal</TableHead>
+                    <TableHead className="font-semibold text-gray-900">Specificatie</TableHead>
+                    <TableHead
+                      className={`font-semibold cursor-pointer select-none hover:bg-gray-100 transition-colors ${
+                        thicknessSortDirection ? 'text-blue-700' : 'text-gray-900'
+                      }`}
+                      onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
                         toggleThicknessSort()
-                      }
-                    }}
-                    aria-label={`Sorteer op dikte ${
-                      thicknessSortDirection === 'desc'
-                        ? 'dik naar dun'
-                        : thicknessSortDirection === 'asc'
-                        ? 'dun naar dik'
-                        : 'ongesorteerd'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      Dikte
-                      {getSortIcon()}
-                    </div>
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-900">Locatie</TableHead>
-                </TableRow>
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          toggleThicknessSort()
+                        }
+                      }}
+                      aria-label={`Sorteer op dikte ${
+                        thicknessSortDirection === 'desc'
+                          ? 'dik naar dun'
+                          : thicknessSortDirection === 'asc'
+                          ? 'dun naar dik'
+                          : 'ongesorteerd'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        Dikte
+                        {getSortIcon()}
+                      </div>
+                    </TableHead>
+                    <TableHead className="font-semibold text-gray-900 text-right">Acties</TableHead>
+                  </TableRow>
+                ) : (
+                  // Regular view: Dynamic draggable columns
+                  <SortableContext items={visibleColumns.map(col => col.id)} strategy={horizontalListSortingStrategy}>
+                    <TableRow className="hover:bg-gray-50">
+                      {visibleColumns.map((column) => (
+                        <DraggableTableHeader
+                          key={column.id}
+                          column={column}
+                          className={`font-semibold text-gray-900 ${
+                            column.id === 'dikte' ? 'cursor-pointer select-none hover:bg-gray-100 transition-colors' : ''
+                          } ${column.id === 'dikte' && thicknessSortDirection ? 'text-blue-700' : ''}`}
+                          onClick={column.id === 'dikte' ? (e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            toggleThicknessSort()
+                          } : undefined}
+                          role={column.id === 'dikte' ? 'button' : undefined}
+                          tabIndex={column.id === 'dikte' ? 0 : undefined}
+                          onKeyDown={column.id === 'dikte' ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              toggleThicknessSort()
+                            }
+                          } : undefined}
+                          aria-label={column.id === 'dikte' ? `Sorteer op dikte ${
+                            thicknessSortDirection === 'desc'
+                              ? 'dik naar dun'
+                              : thicknessSortDirection === 'asc'
+                              ? 'dun naar dik'
+                              : 'ongesorteerd'
+                          }` : undefined}
+                        >
+                          {column.label}
+                          {column.id === 'dikte' && getSortIcon()}
+                        </DraggableTableHeader>
+                      ))}
+                      <TableHead className="font-semibold text-gray-900 text-right">Acties</TableHead>
+                    </TableRow>
+                  </SortableContext>
+                )}
                 {/* Filter Row */}
                 <TableRow className="bg-gray-50 hover:bg-gray-50">
-                  <TableHead className="p-2">
-                    <ColumnFilter
-                      value={columnFilters.plaatnummer}
-                      onChange={(v) => updateColumnFilter('plaatnummer', v)}
-                      placeholder="Filter..."
-                      options={columnOptions.plaatnummers}
-                    />
-                  </TableHead>
-                  <TableHead className="p-2">
-                    <ColumnFilter
-                      value={columnFilters.status}
-                      onChange={(v) => updateColumnFilter('status', v)}
-                      placeholder="Filter..."
-                      options={columnOptions.statuses}
-                    />
-                  </TableHead>
-                  <TableHead className="p-2">
-                    <ColumnFilter
-                      value={columnFilters.claims}
-                      onChange={(v) => updateColumnFilter('claims', v)}
-                      placeholder="Filter..."
-                      options={columnOptions.claims}
-                    />
-                  </TableHead>
-                  <TableHead className="p-2">
-                    <ColumnFilter
-                      value={columnFilters.materiaal}
-                      onChange={(v) => updateColumnFilter('materiaal', v)}
-                      placeholder="Filter..."
-                      options={columnOptions.materialen}
-                    />
-                  </TableHead>
-                  <TableHead className="p-2">
-                    <ColumnFilter
-                      value={columnFilters.specificatie}
-                      onChange={(v) => updateColumnFilter('specificatie', v)}
-                      placeholder="Filter..."
-                      options={columnOptions.specificaties}
-                    />
-                  </TableHead>
-                  <TableHead className="p-2">
-                    <ColumnFilter
-                      value={columnFilters.afmeting}
-                      onChange={(v) => updateColumnFilter('afmeting', v)}
-                      placeholder="Filter..."
-                      options={columnOptions.afmetingen}
-                    />
-                  </TableHead>
-                  <TableHead className="p-2">
-                    <ColumnFilter
-                      value={columnFilters.dikte}
-                      onChange={(v) => updateColumnFilter('dikte', v)}
-                      placeholder="Filter..."
-                      options={columnOptions.diktes}
-                    />
-                  </TableHead>
-                  <TableHead className="p-2">
-                    <ColumnFilter
-                      value={columnFilters.locatie}
-                      onChange={(v) => updateColumnFilter('locatie', v)}
-                      placeholder="Filter..."
-                      options={columnOptions.locaties}
-                    />
-                  </TableHead>
+                  {statusFilter === 'bij_laser' ? (
+                    // Bij Laser: Fixed filter columns
+                    <>
+                      <TableHead className="p-2">
+                        <ColumnFilter
+                          value={columnFilters.plaatnummer}
+                          onChange={(v) => updateColumnFilter('plaatnummer', v)}
+                          placeholder="Filter..."
+                          options={columnOptions.plaatnummers}
+                        />
+                      </TableHead>
+                      <TableHead className="p-2">
+                        <ColumnFilter
+                          value={columnFilters.materiaal}
+                          onChange={(v) => updateColumnFilter('materiaal', v)}
+                          placeholder="Filter..."
+                          options={columnOptions.materialen}
+                        />
+                      </TableHead>
+                      <TableHead className="p-2">
+                        <ColumnFilter
+                          value={columnFilters.specificatie}
+                          onChange={(v) => updateColumnFilter('specificatie', v)}
+                          placeholder="Filter..."
+                          options={columnOptions.specificaties}
+                        />
+                      </TableHead>
+                      <TableHead className="p-2">
+                        <ColumnFilter
+                          value={columnFilters.dikte}
+                          onChange={(v) => updateColumnFilter('dikte', v)}
+                          placeholder="Filter..."
+                          options={columnOptions.diktes}
+                        />
+                      </TableHead>
+                      <TableHead className="p-2" />
+                    </>
+                  ) : (
+                    // Regular view: Dynamic filter columns + actions column
+                    <>
+                      {visibleColumns.map((column) => (
+                        <TableHead key={column.id} className="p-2">
+                          {column.filterable !== false ? (
+                            <ColumnFilter
+                              value={columnFilters[column.id as keyof typeof columnFilters] || ''}
+                              onChange={(v) => updateColumnFilter(column.id as keyof typeof columnFilters, v)}
+                              placeholder="Filter..."
+                              options={columnOptions[`${column.id}s` as keyof typeof columnOptions] || columnOptions[column.id as keyof typeof columnOptions] || []}
+                            />
+                          ) : null}
+                        </TableHead>
+                      ))}
+                      <TableHead className="p-2" />
+                    </>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPlates.length > 0 ? (
                   filteredPlates.map((plate) => {
-                    const statusStyle = getStatusBadge(plate.status)
-                    const activeClaims = plate.claims?.filter(c => c.actief) || []
-
                     return (
                       <TableRow
                         key={plate.id}
-                        onClick={() => handlePlateClick(plate)}
-                        className="cursor-pointer hover:bg-gray-50 transition-colors h-14"
+                        onClick={statusFilter !== 'bij_laser' ? () => handlePlateClick(plate) : undefined}
+                        className={statusFilter !== 'bij_laser' ? "cursor-pointer hover:bg-gray-50 transition-colors h-14" : "hover:bg-gray-50 transition-colors h-14"}
                       >
-                        {/* Plaatnummer */}
-                        <TableCell className="font-medium text-gray-900">
-                          {plate.plate_number}
-                        </TableCell>
-
-                        {/* Status */}
-                        <TableCell>
-                          <Badge variant={statusStyle.variant} className={statusStyle.className}>
-                            {formatStatus(plate.status)}
-                          </Badge>
-                        </TableCell>
-
-                        {/* Claims */}
-                        <TableCell>
-                          {activeClaims.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {activeClaims.slice(0, 3).map((claim, idx) => (
-                                <Tooltip
-                                  key={idx}
-                                  delay={100}
-                                  content={
-                                    <div className="text-left">
-                                      <div className="font-medium">{claim.project_naam}-{claim.project_fase}</div>
-                                      {claim.m2_geclaimd && <div className="text-gray-300 mt-0.5">{claim.m2_geclaimd} m² geclaimd</div>}
-                                      {claim.opmerkingen && <div className="text-gray-300 mt-0.5">{claim.opmerkingen}</div>}
-                                      <div className="text-gray-400 text-[10px] mt-1">
-                                        {new Date(claim.created_at).toLocaleDateString('nl-NL')}
-                                      </div>
-                                    </div>
-                                  }
-                                >
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs px-2 py-0.5 h-6 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-help"
-                                  >
-                                    {claim.project_naam}-{claim.project_fase}
-                                  </Badge>
-                                </Tooltip>
-                              ))}
-                              {activeClaims.length > 3 && (
-                                <Tooltip
-                                  delay={100}
-                                  content={
-                                    <div className="text-left space-y-1">
-                                      {activeClaims.slice(3).map((claim, idx) => (
-                                        <div key={idx} className="text-xs">
-                                          {claim.project_naam}-{claim.project_fase}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  }
-                                >
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs px-2 py-0.5 h-6 border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors cursor-help"
-                                  >
-                                    +{activeClaims.length - 3}
-                                  </Badge>
-                                </Tooltip>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-sm text-gray-400">-</span>
-                          )}
-                        </TableCell>
-
-                        {/* Materiaal */}
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {plate.material?.kleur && (
-                              <div
-                                className="w-2 h-2 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: plate.material.kleur }}
-                              />
-                            )}
-                            <span className="text-sm text-gray-900">
-                              {plate.material?.naam || plate.material_prefix}
-                            </span>
-                          </div>
-                        </TableCell>
-
-                        {/* Specificatie */}
-                        <TableCell className="text-sm text-gray-600">
-                          {plate.quality}
-                        </TableCell>
-
-                        {/* Afmetingen */}
-                        <TableCell className="text-sm text-gray-600">
-                          {plate.width} × {plate.length} mm
-                          <span className="text-gray-400 ml-2">
-                            ({calculateArea(plate)} m²)
-                          </span>
-                        </TableCell>
-
-                        {/* Dikte */}
-                        <TableCell className="text-sm text-gray-600">
-                          {plate.thickness} mm
-                        </TableCell>
-
-                        {/* Locatie */}
-                        <TableCell className="text-sm text-gray-600">
-                          {plate.location || '-'}
-                        </TableCell>
+                        {statusFilter === 'bij_laser' ? (
+                          // Bij Laser: Fixed cells
+                          <>
+                            <TableCell className="font-medium text-gray-900">
+                              {plate.plate_number}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {plate.material?.kleur && (
+                                  <div
+                                    className="w-2 h-2 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: plate.material.kleur }}
+                                  />
+                                )}
+                                <span className="text-sm text-gray-900">
+                                  {plate.material?.naam || plate.material_prefix}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">
+                              {plate.quality}
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">
+                              {plate.thickness} mm
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2 justify-end">
+                                <LocationReturnButton plate={plate} />
+                                <RemnantButton plate={plate} />
+                                <ConsumeButton plate={plate} />
+                              </div>
+                            </TableCell>
+                          </>
+                        ) : (
+                          // Regular view: Dynamic cells + actions column
+                          <>
+                            {visibleColumns.map((column) => (
+                              <TableCell key={column.id}>
+                                {column.accessor(plate)}
+                              </TableCell>
+                            ))}
+                            <TableCell>
+                              <div className="flex gap-2 justify-end">
+                                <NaarLaserButton plate={plate} />
+                              </div>
+                            </TableCell>
+                          </>
+                        )}
                       </TableRow>
                     )
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-32 text-center">
+                    <TableCell colSpan={statusFilter === 'bij_laser' ? 5 : visibleColumns.length + 1} className="h-32 text-center">
                       <div className="flex flex-col items-center justify-center text-gray-500">
                         <Package className="h-8 w-8 mb-2 text-gray-400" />
                         <p className="font-medium">Geen platen gevonden</p>
@@ -581,8 +649,9 @@ export function Voorraad() {
                   </TableRow>
                 )}
               </TableBody>
-                </Table>
-              </div>
+                  </Table>
+                </ScrollableTable>
+              </DndContext>
             </div>
           ) : (
             <>

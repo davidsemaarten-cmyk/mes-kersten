@@ -17,7 +17,7 @@ import uvicorn
 import logging
 
 # Import routers
-from api import auth, platestock, projects, order_types, orders, posnummers
+from api import auth, platestock, projects, order_types, orders, posnummers, storage_locations
 from database import get_db
 
 # Configure logging with rotation
@@ -249,6 +249,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(platestock.router, prefix="/api/platestock", tags=["PlateStock"])
 app.include_router(projects.router, prefix="/api", tags=["Projects"])
+app.include_router(storage_locations.router)  # Already has prefix in router definition
 app.include_router(order_types.router)
 app.include_router(orders.router)
 app.include_router(posnummers.router)

@@ -258,6 +258,45 @@ class VanLaserRequest(BaseModel):
     new_location: str = Field(..., min_length=1, max_length=100)
 
 
+class RemnantRequest(BaseModel):
+    """Request to process remnant from laser-cut plate"""
+    new_width: int = Field(..., gt=0, le=10000, description="Remnant width in mm (max 10m)")
+    new_length: int = Field(..., gt=0, le=20000, description="Remnant length in mm (max 20m)")
+    new_location: str = Field(..., min_length=1, max_length=100)
+    notes: Optional[str] = Field(None, max_length=1000)
+
+    @field_validator('notes')
+    @classmethod
+    def validate_notes(cls, v: Optional[str]) -> Optional[str]:
+        """Validate notes field with XSS and SQL injection protection"""
+        if v is None:
+            return v
+
+        import re
+        # Check for script tags and SQL injection
+        dangerous_patterns = [
+            r"<script[^>]*>.*?</script>",  # Script tags
+            r"javascript:",  # Javascript protocol
+            r"on\w+\s*=",  # Event handlers
+            r"('|\"|\`)\s*(OR|AND)\s*('|\"|\`)?\s*\d+\s*=\s*\d+",  # SQL injection
+            r";\s*(DROP|DELETE|UPDATE|INSERT)",  # SQL commands
+        ]
+
+        for pattern in dangerous_patterns:
+            if re.search(pattern, v, re.IGNORECASE):
+                raise ValueError('Notes contain potentially dangerous content')
+
+        return v.strip()[:1000]  # Limit to 1000 chars
+
+
+class RemnantResponse(BaseModel):
+    """Response for remnant processing"""
+    original_plate: 'PlateResponse'  # Consumed original
+    remnant_plate: 'PlateResponse'  # New remnant plate
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ============================================================
 # CLAIM SCHEMAS
 # ============================================================

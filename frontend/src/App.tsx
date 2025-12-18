@@ -12,6 +12,7 @@ import { Projects } from './pages/Projects'
 import { ProjectDetail } from './pages/ProjectDetail'
 import { FaseDetail } from './pages/FaseDetail'
 import { Profile } from './pages/Profile'
+import { StorageLocations } from './pages/StorageLocations'
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -48,6 +49,7 @@ function App() {
             <Route path="/voorraad" element={<ProtectedRoute><Voorraad /></ProtectedRoute>} />
             <Route path="/claims" element={<ProtectedRoute><Claims /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            <Route path="/storage-locations" element={<ProtectedRoute><StorageLocations /></ProtectedRoute>} />
 
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>

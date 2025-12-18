@@ -20,7 +20,7 @@ from schemas.platestock import (
     PrefixSuggestionRequest, PrefixSuggestionResponse,
     # Plate schemas
     PlateCreate, PlateUpdate, PlateResponse, PlateWithRelations,
-    VanLaserRequest, UserSummary, PlateBulkCreate,
+    VanLaserRequest, RemnantRequest, RemnantResponse, UserSummary, PlateBulkCreate,
     # Claim schemas
     ClaimCreate, ClaimUpdate, ClaimResponse, ClaimWithPlate,
     ClaimBulkCreate, BulkClaimResponse,
@@ -55,6 +55,16 @@ def check_admin(current_user: User):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Alleen admin heeft toegang"
+        )
+
+
+def check_laser_access(current_user: User):
+    """Check if user has access to laser operations (admin, werkvoorbereider, werkplaats)"""
+    user_roles = [role.role for role in current_user.roles]
+    if 'admin' not in user_roles and 'werkvoorbereider' not in user_roles and 'werkplaats' not in user_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Alleen admin, werkvoorbereider en werkplaats hebben toegang tot laser operaties"
         )
 
 
@@ -377,8 +387,8 @@ async def move_plate_to_laser(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Move plate to laser station (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    """Move plate to laser station (admin, werkvoorbereider, werkplaats)"""
+    check_laser_access(current_user)
 
     db_plate = db.query(Plate).filter(Plate.id == plate_id).first()
     if not db_plate:
@@ -400,8 +410,8 @@ async def move_plate_from_laser(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Return plate from laser (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    """Return plate from laser (admin, werkvoorbereider, werkplaats)"""
+    check_laser_access(current_user)
 
     db_plate = db.query(Plate).filter(Plate.id == plate_id).first()
     if not db_plate:
@@ -414,6 +424,96 @@ async def move_plate_from_laser(
 
     db.refresh(db_plate)
     return db_plate
+
+
+@router.post("/plates/{plate_id}/process-remnant", response_model=RemnantResponse)
+async def process_remnant(
+    plate_id: str,
+    request: RemnantRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Process remnant from laser-cut plate (admin, werkvoorbereider, werkplaats)"""
+    check_laser_access(current_user)
+
+    # Get original plate
+    original_plate = db.query(Plate).filter(Plate.id == plate_id).first()
+    if not original_plate:
+        raise HTTPException(status_code=404, detail="Plaat niet gevonden")
+
+    # Validate plate is bij_laser
+    if original_plate.status != 'bij_laser':
+        raise HTTPException(status_code=400, detail="Plaat staat niet bij laser")
+
+    # Validate plate not already consumed
+    if original_plate.is_consumed:
+        raise HTTPException(status_code=400, detail="Plaat is al geconsumeerd")
+
+    # Validate remnant dimensions are smaller than original
+    if request.new_width >= original_plate.width:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Nieuwe breedte ({request.new_width}mm) moet kleiner zijn dan origineel ({original_plate.width}mm)"
+        )
+
+    if request.new_length >= original_plate.length:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Nieuwe lengte ({request.new_length}mm) moet kleiner zijn dan origineel ({original_plate.length}mm)"
+        )
+
+    try:
+        # Start transaction
+        # 1. Mark original plate as consumed
+        PlateStockService.consume_plate(db, original_plate, str(current_user.id))
+
+        # 2. Generate new plate number for remnant
+        remnant_plate_number = PlateStockService.generate_plate_number(db, original_plate.material_prefix)
+
+        # 3. Calculate remnant weight (proportional to area)
+        if original_plate.weight:
+            original_area = original_plate.width * original_plate.length
+            remnant_area = request.new_width * request.new_length
+            area_ratio = remnant_area / original_area
+            remnant_weight = float(original_plate.weight) * area_ratio
+        else:
+            remnant_weight = None
+
+        # 4. Create remnant plate
+        remnant_plate = Plate(
+            plate_number=remnant_plate_number,
+            material_prefix=original_plate.material_prefix,
+            quality=original_plate.quality,
+            thickness=original_plate.thickness,
+            width=request.new_width,
+            length=request.new_length,
+            weight=remnant_weight,
+            location=request.new_location,
+            notes=f"Restant van {original_plate.plate_number}. {request.notes or ''}".strip(),
+            barcode=None,  # New barcode will be generated if needed
+            status='beschikbaar',
+            created_by=current_user.id
+        )
+
+        db.add(remnant_plate)
+        db.flush()  # Get ID without committing
+
+        # Commit transaction
+        db.commit()
+
+        # Refresh both plates to get updated data
+        db.refresh(original_plate)
+        db.refresh(remnant_plate)
+
+        # Return both plates
+        return RemnantResponse(
+            original_plate=original_plate,
+            remnant_plate=remnant_plate
+        )
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Fout bij verwerken restant: {str(e)}")
 
 
 @router.post("/plates/{plate_id}/consume", response_model=PlateResponse)

@@ -33,8 +33,8 @@ export function Projects() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Projecten</h1>
-            <p className="text-muted-foreground mt-1">Beheer en bekijk alle projecten</p>
+            <h1 className="text-2xl font-semibold text-gray-900">Projecten</h1>
+            <p className="text-sm text-gray-600 mt-1">Beheer en bekijk alle projecten</p>
           </div>
 
           {permissions.canCreateProjects && (

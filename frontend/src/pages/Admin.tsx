@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
@@ -21,7 +22,7 @@ import {
   useDeleteMaterial
 } from '../hooks/usePlateStock'
 import type { Material } from '../types/database'
-import { Plus, Trash2, Loader2, Settings, Palette } from 'lucide-react'
+import { Plus, Trash2, Loader2, Settings, Palette, MapPin, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { AddMaterialModal } from '../components/AddMaterialModal'
 
@@ -49,16 +50,38 @@ export function Admin() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Settings className="w-8 h-8 text-blue-600" />
+            <Settings className="w-8 h-8 text-gray-600" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Systeembeheer</h1>
-              <p className="text-gray-600">Materialen en instellingen</p>
+              <h1 className="text-2xl font-semibold text-gray-900">Systeembeheer</h1>
+              <p className="text-sm text-gray-600 mt-1">Materialen en instellingen</p>
             </div>
           </div>
+        </div>
+
+        {/* Admin Sections Navigation */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link to="/storage-locations" className="group">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <MapPin className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Locatiebeheer</h3>
+                      <p className="text-sm text-gray-600">Opslaglocaties beheren</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Materials Section */}
