@@ -8,8 +8,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -23,9 +22,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
-
-# Bearer token security
-security = HTTPBearer()
 
 
 def get_password_hash(password: str) -> str:
@@ -106,48 +102,57 @@ def verify_token(token: str) -> dict:
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
     db: Session = Depends(get_db)
 ) -> User:
     """
-    FastAPI dependency to get the current authenticated user
-    
+    FastAPI dependency to get the current authenticated user from httpOnly cookie
+
     Args:
-        credentials: Bearer token from request header
+        request: FastAPI Request object to read cookies
         db: Database session
-        
+
     Returns:
         Current authenticated User object
-        
+
     Raises:
         HTTPException: If token is invalid or user not found
-        
+
     Usage:
         @router.get("/protected")
         def protected_route(current_user: User = Depends(get_current_user)):
             return {"user": current_user.email}
     """
-    token = credentials.credentials
+    # Read token from httpOnly cookie
+    token = request.cookies.get("access_token")
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Niet ingelogd - geen authenticatie token gevonden",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     payload = verify_token(token)
-    
+
     user_id: str = payload.get("sub")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Ongeldige authenticatie credentials"
         )
-    
+
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Gebruiker niet gevonden"
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Gebruiker is niet actief"
         )
-    
+
     return user

@@ -43,7 +43,7 @@ class InvalidFaseNumberError(ServiceError):
 
 
 # =====================================================
-# PlateStock Exceptions (for future consistency)
+# PlateStock Exceptions
 # =====================================================
 
 class MaterialNotFoundError(ServiceError):
@@ -58,6 +58,51 @@ class PlateNotFoundError(ServiceError):
 
 class ClaimNotFoundError(ServiceError):
     """Raised when a requested claim does not exist"""
+    pass
+
+
+class PlateAlreadyConsumedException(ServiceError):
+    """Raised when trying to operate on an already consumed plate"""
+    pass
+
+
+class PlateHasActiveClaimsException(ServiceError):
+    """Raised when trying to delete a plate with active claims"""
+    pass
+
+
+class PlateNotAtLaserException(ServiceError):
+    """Raised when trying to return a plate that's not at the laser"""
+    pass
+
+
+class MaterialHasPlatesException(ServiceError):
+    """Raised when trying to delete a material that has plates"""
+    pass
+
+
+class MaterialPrefixNotUniqueException(ServiceError):
+    """Raised when trying to create a material with duplicate prefix"""
+    pass
+
+
+class MaterialPrefixNotEditableException(ServiceError):
+    """Raised when trying to edit a prefix that has plates"""
+    pass
+
+
+class InvalidRemnantDimensionsException(ServiceError):
+    """Raised when remnant dimensions are invalid"""
+    pass
+
+
+class PlateNumberGenerationException(ServiceError):
+    """Raised when unable to generate unique plate number"""
+    pass
+
+
+class ClaimOnConsumedPlateException(ServiceError):
+    """Raised when trying to claim a consumed plate"""
     pass
 
 

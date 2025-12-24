@@ -17,21 +17,9 @@ from schemas.storage_location import (
     StorageLocationList
 )
 from utils.auth import get_current_user
+from utils.permissions import require_admin
 
 router = APIRouter(prefix="/api/storage-locations", tags=["storage-locations"])
-
-
-def check_admin(current_user: User = Depends(get_current_user)) -> User:
-    """Verify user has admin role"""
-    # Get user's roles
-    user_roles = [ur.role for ur in current_user.user_roles]
-
-    if "admin" not in user_roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access vereist voor locatiebeheer"
-        )
-    return current_user
 
 
 @router.get("/", response_model=List[StorageLocationResponse])
@@ -76,7 +64,7 @@ async def get_storage_location(
 async def create_storage_location(
     location_data: StorageLocationCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(check_admin)  # Admin only
+    current_user: User = Depends(require_admin)  # Admin only
 ):
     """
     Create a new storage location (Admin only)
@@ -113,7 +101,7 @@ async def update_storage_location(
     location_id: str,
     location_data: StorageLocationUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(check_admin)  # Admin only
+    current_user: User = Depends(require_admin)  # Admin only
 ):
     """
     Update a storage location (Admin only)
@@ -160,7 +148,7 @@ async def update_storage_location(
 async def delete_storage_location(
     location_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(check_admin)  # Admin only
+    current_user: User = Depends(require_admin)  # Admin only
 ):
     """
     Soft delete a storage location (Admin only)

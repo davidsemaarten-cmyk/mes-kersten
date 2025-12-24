@@ -94,7 +94,50 @@ psql -U postgres -d mes_kersten
 
 3. **Role-Based Access**: Use helper functions `check_admin()` and `check_admin_or_werkvoorbereider()` from platestock.py as patterns for authorization. All 8 roles defined in `types/roles.ts`.
 
-4. **Audit Logging**: Use `log_action()` from `utils/audit.py` to track user actions with entity references.
+4. **Transaction Management Pattern**: **Service Layer Owns Transactions**
+   - **Service methods** call `db.commit()` on success and `db.rollback()` on exception
+   - **API endpoints** NEVER call `db.commit()` or `db.rollback()`
+   - Service methods raise **custom ServiceError exceptions** (from `services/exceptions.py`)
+   - API endpoints catch ServiceError and convert to HTTPException
+   - Example:
+     ```python
+     # Service Layer (services/platestock.py)
+     from services.exceptions import PlateNotFoundError
+
+     @staticmethod
+     def delete_plate(db: Session, user_id: UUID, plate_id: UUID) -> None:
+         try:
+             plate = db.query(Plate).filter(Plate.id == plate_id).first()
+             if not plate:
+                 raise PlateNotFoundError(f"Plate {plate_id} not found")
+
+             # Audit log before deletion
+             log_action(db, user_id, AuditAction.DELETE_PLATE,
+                       EntityType.PLATE, plate.id)
+
+             db.delete(plate)
+             db.commit()  # Service owns commit
+         except PlateNotFoundError:
+             db.rollback()
+             raise
+         except Exception as e:
+             db.rollback()
+             raise
+
+     # API Layer (api/platestock.py)
+     from services.exceptions import PlateNotFoundError
+
+     @router.delete("/plates/{plate_id}")
+     async def delete_plate(plate_id: str, db: Session = Depends(get_db),
+                           current_user: User = Depends(require_admin)):
+         try:
+             PlateStockService.delete_plate(db, current_user.id, plate_id)
+             return {"success": True}
+         except PlateNotFoundError:
+             raise HTTPException(status_code=404, detail="Plaat niet gevonden")
+     ```
+
+5. **Audit Logging**: Use `log_action()` from `utils/audit.py` to track user actions with entity references.
    - **Transaction Safety**: Default behavior does NOT auto-commit (use `auto_commit=False`)
    - Always call `log_action()` BEFORE committing the main transaction
    - Use `AuditAction` and `EntityType` enums for consistency
@@ -110,11 +153,46 @@ psql -U postgres -d mes_kersten
      db.commit()  # Commits both atomically
      ```
 
-5. **Database Sessions**: Always use `db: Session = Depends(get_db)` for automatic session cleanup.
+6. **Database Sessions**: Always use `db: Session = Depends(get_db)` for automatic session cleanup.
 
-6. **UUID Primary Keys**: All tables use UUID primary keys via PostgreSQL's gen_random_uuid().
+7. **UUID Primary Keys**: All tables use UUID primary keys via PostgreSQL's gen_random_uuid().
 
-7. **Timestamps**: Use `created_at` and `updated_at` fields with server defaults (func.now()).
+8. **Timestamps**: Use `created_at` and `updated_at` fields with server defaults (func.now()).
+
+9. **Query Performance - Avoid N+1 Queries**: Always use JOIN queries instead of loops with queries.
+   - **Problem**: Fetching related data in loops causes N+1 queries (1 main + N related)
+   - **Solution**: Use JOIN with GROUP BY for aggregates, or joinedload() for relationships
+   - Example - Fetching materials with plate counts:
+     ```python
+     # ❌ BAD: N+1 query problem (1 + N queries)
+     materials = db.query(Material).all()  # 1 query
+     for material in materials:
+         material.plate_count = db.query(Plate).filter(
+             Plate.material_prefix == material.plaatcode_prefix
+         ).count()  # N separate queries!
+
+     # ✅ GOOD: Single query with JOIN (1-2 queries)
+     from sqlalchemy import func
+
+     query = db.query(
+         Material,
+         func.coalesce(func.count(Plate.id), 0).label('plate_count')
+     ).outerjoin(Plate, Material.plaatcode_prefix == Plate.material_prefix)
+
+     query = query.group_by(Material.id)
+     results = query.order_by(Material.plaatcode_prefix).all()
+
+     materials = []
+     for material, plate_count in results:
+         material.plate_count = plate_count
+         materials.append(material)
+     ```
+   - **Key Points:**
+     - Use `outerjoin()` (LEFT OUTER JOIN) to include records with no related data
+     - Use `func.coalesce(func.count(...), 0)` for counts with NULL handling
+     - Apply filters BEFORE `group_by()` for efficiency
+     - For relationships, use `joinedload()` or `selectinload()` to eager load
+   - See `docs/performance/query-optimization.md` for detailed examples
 
 ### Frontend Architecture
 

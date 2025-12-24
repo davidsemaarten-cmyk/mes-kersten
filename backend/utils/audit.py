@@ -48,11 +48,20 @@ class AuditAction(str, Enum):
     CLAIM_PLATE = "claim_plate"
     UNCLAIM_PLATE = "unclaim_plate"
     CONSUME_PLATE = "consume_plate"
+    MOVE_TO_LASER = "move_to_laser"
+    MOVE_FROM_LASER = "move_from_laser"
+    PROCESS_REMNANT = "process_remnant"
 
     # Material actions
     CREATE_MATERIAL = "create_material"
     UPDATE_MATERIAL = "update_material"
     DELETE_MATERIAL = "delete_material"
+
+    # Claim actions
+    CREATE_CLAIM = "create_claim"
+    RELEASE_CLAIM = "release_claim"
+    BULK_CLAIM = "bulk_claim"
+    RELEASE_BY_PROJECT = "release_by_project"
 
     # File actions (Phase 2)
     UPLOAD_FILE = "upload_file"
