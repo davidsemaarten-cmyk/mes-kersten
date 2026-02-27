@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  User
+  User,
+  Zap
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -53,6 +54,7 @@ export default function Layout({ children }: LayoutProps) {
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Projecten', path: '/projecten', icon: Folder, requiresPermission: 'canCreateProjects' as const },
     { name: 'Voorraad', path: '/voorraad', icon: Package },
+    { name: 'Laserplanner', path: '/laserplanner', icon: Zap, requiresPermission: 'canPlanLaser' as const },
     { name: 'Claims', path: '/claims', icon: FileText },
     { name: 'Admin', path: '/admin', icon: Settings },
   ]

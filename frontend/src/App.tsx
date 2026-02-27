@@ -13,6 +13,8 @@ import { ProjectDetail } from './pages/ProjectDetail'
 import { FaseDetail } from './pages/FaseDetail'
 import { Profile } from './pages/Profile'
 import { StorageLocations } from './pages/StorageLocations'
+import { Laserplanner } from './pages/Laserplanner'
+import { LaserplannerDetail } from './pages/LaserplannerDetail'
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -48,6 +50,11 @@ function App() {
             {/* PlateStock Routes */}
             <Route path="/voorraad" element={<ProtectedRoute><Voorraad /></ProtectedRoute>} />
             <Route path="/claims" element={<ProtectedRoute><Claims /></ProtectedRoute>} />
+
+            {/* Laserplanner Routes */}
+            <Route path="/laserplanner" element={<ProtectedRoute><Laserplanner /></ProtectedRoute>} />
+            <Route path="/laserplanner/:jobId" element={<ProtectedRoute><LaserplannerDetail /></ProtectedRoute>} />
+
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/storage-locations" element={<ProtectedRoute><StorageLocations /></ProtectedRoute>} />
 

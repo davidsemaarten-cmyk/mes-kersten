@@ -41,6 +41,7 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
     length: 0,
     weight: undefined,
     location: '',
+    heatnummer: '',
     notes: '',
     aantal: 1
   })
@@ -139,6 +140,7 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
         length: 0,
         weight: undefined,
         location: '',
+        heatnummer: '',
         notes: '',
         aantal: 1
       })
@@ -440,6 +442,26 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Heat Number */}
+          <div className="space-y-2">
+            <Label htmlFor="heatnummer">
+              Heatnummer <span className="text-sm text-gray-500">(optioneel)</span>
+            </Label>
+            <Input
+              id="heatnummer"
+              type="text"
+              placeholder="Bijv. HEAT-2024-12345"
+              maxLength={100}
+              value={formData.heatnummer}
+              onChange={(e) =>
+                setFormData({ ...formData, heatnummer: e.target.value })
+              }
+            />
+            <p className="text-xs text-gray-500">
+              Heat/batch certificeringsnummer voor materiaal traceerbaarheid
+            </p>
           </div>
 
           {/* Quantity */}

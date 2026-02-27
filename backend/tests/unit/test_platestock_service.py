@@ -317,7 +317,7 @@ class TestPlateOperations:
         claim = Claim(
             plate_id=test_plate.id,
             project_naam="Test Project",
-            project_fase="Fase 1",
+            project_fase="001",
             actief=True,
             claimed_by=werkvoorbereider_user.id
         )
@@ -659,14 +659,14 @@ class TestClaimOperations:
             user_id=werkvoorbereider_user.id,
             plate_id=test_plate.id,
             project_naam="Project Y",
-            project_fase="Engineering",
+            project_fase="002",
             m2_geclaimd=Decimal("5.0"),
             notes="Test claim"
         )
 
         assert claim.plate_id == test_plate.id
         assert claim.project_naam == "Project Y"
-        assert claim.project_fase == "Engineering"
+        assert claim.project_fase == "002"
         assert claim.m2_geclaimd == Decimal("5.0")
         assert claim.actief is True
 
@@ -682,7 +682,7 @@ class TestClaimOperations:
                 user_id=werkvoorbereider_user.id,
                 plate_id=test_plate_consumed.id,
                 project_naam="Project X",
-                project_fase="Productie",
+                project_fase="001",
                 m2_geclaimd=None,
                 notes=None
             )
@@ -763,7 +763,7 @@ class TestClaimOperations:
             user_id=werkvoorbereider_user.id,
             plate_ids=plate_ids,
             project_naam="Bulk Project",
-            project_fase="Productie"
+            project_fase="001"
         )
 
         assert len(claims) == 3
@@ -780,7 +780,7 @@ class TestClaimOperations:
             user_id=werkvoorbereider_user.id,
             plate_ids=plate_ids,
             project_naam="Bulk Project",
-            project_fase="Productie"
+            project_fase="001"
         )
 
         # Only 1 claim created (consumed plate skipped)
@@ -793,7 +793,7 @@ class TestClaimOperations:
             db=test_db,
             user_id=werkvoorbereider_user.id,
             project_naam="Project X",
-            project_fase="Productie"
+            project_fase="001"
         )
 
         assert result["claims_released"] == 1

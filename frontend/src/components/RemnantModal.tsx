@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import type { PlateWithRelations } from '../types/database'
+import { useStorageLocations } from '../hooks/useStorageLocations'
 
 interface RemnantModalProps {
   plate: PlateWithRelations
@@ -53,20 +54,13 @@ export function RemnantModal({ plate, open, onOpenChange }: RemnantModalProps) {
   const [locationOpen, setLocationOpen] = useState(false)
   const queryClient = useQueryClient()
 
-  // Get all plates to extract unique locations
-  const plates = queryClient.getQueryData<PlateWithRelations[]>(['plates']) || []
+  // Get storage locations from API
+  const { data: storageLocations } = useStorageLocations(false)
 
-  // Extract unique locations from existing plates
+  // Extract location names
   const locations = useMemo(() => {
-    const uniqueLocations = Array.from(
-      new Set(
-        plates
-          .map(p => p.location)
-          .filter(Boolean) as string[]
-      )
-    ).sort()
-    return uniqueLocations
-  }, [plates])
+    return (storageLocations || []).map(loc => loc.naam).sort()
+  }, [storageLocations])
 
   // Reset form when dialog closes
   const handleOpenChange = (newOpen: boolean) => {

@@ -24,6 +24,7 @@ export function RemnantButton({ plate }: RemnantButtonProps) {
         variant="outline"
         size="sm"
         onClick={() => setOpen(true)}
+        className="text-purple-600 border-purple-200 hover:bg-purple-50"
       >
         <Scissors className="h-3 w-3 mr-1" />
         Restant

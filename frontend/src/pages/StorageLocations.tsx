@@ -41,7 +41,7 @@ import {
 } from '../hooks/useStorageLocations';
 
 export function StorageLocations() {
-  const { permissions } = usePermissions();
+  const { isAdmin } = usePermissions();
   const [showInactive, setShowInactive] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -58,7 +58,7 @@ export function StorageLocations() {
   const deleteMutation = useDeleteStorageLocation();
 
   // Check if user is admin
-  if (!permissions.isAdmin) {
+  if (!isAdmin) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[400px]">

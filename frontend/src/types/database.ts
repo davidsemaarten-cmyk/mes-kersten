@@ -160,6 +160,7 @@ export interface Plate {
   length: number
   weight?: number
   location?: string
+  heatnummer?: string
   notes?: string
   barcode?: string
   status: 'beschikbaar' | 'geclaimd' | 'bij_laser'
@@ -180,6 +181,7 @@ export interface PlateCreate {
   length: number
   weight?: number
   location?: string
+  heatnummer?: string
   notes?: string
   barcode?: string
 }
@@ -191,6 +193,7 @@ export interface PlateUpdate {
   length?: number
   weight?: number
   location?: string
+  heatnummer?: string
   notes?: string
   barcode?: string
 }
@@ -461,4 +464,55 @@ export interface ProjectStatistics {
   order_count: number
   posnummer_count: number
   file_count: number  // Future: Phase 2
+}
+
+// =====================================================
+// Laserplanner Types
+// =====================================================
+
+export type LaserJobStatus = 'aangemaakt' | 'geprogrammeerd' | 'nc_verzonden' | 'gereed'
+
+export interface LaserLineItem {
+  id: string
+  laser_job_id: string
+  projectcode: string | null
+  fasenr: string | null
+  posnr: string | null
+  profiel: string | null
+  aantal: number | null
+  lengte: number | null
+  kwaliteit: string | null
+  gewicht: number | null
+  zaag: string | null
+  opmerkingen: string | null
+  row_number: number
+  created_at: string
+}
+
+export interface LaserJob {
+  id: string
+  naam: string
+  beschrijving: string | null
+  project_id: string | null
+  fase_id: string | null
+  status: LaserJobStatus
+  csv_metadata: Record<string, string> | null
+  created_by: string
+  created_at: string
+  updated_at: string
+  is_active: boolean
+  line_item_count: number
+}
+
+export interface LaserJobWithLineItems extends LaserJob {
+  line_items: LaserLineItem[]
+}
+
+export interface CSVParseResult {
+  metadata: Record<string, string>
+  headers: string[]
+  rows: Array<{
+    row_number: number
+    [key: string]: any
+  }>
 }

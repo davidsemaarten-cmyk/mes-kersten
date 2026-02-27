@@ -464,7 +464,7 @@ class TestClaimEndpoints:
             json={
                 "plate_id": str(test_plate.id),
                 "project_naam": "Project Y",
-                "project_fase": "Engineering",
+                "project_fase": "002",
                 "m2_geclaimd": 5.0,
                 "notes": "Claim for engineering phase"
             }
@@ -506,7 +506,7 @@ class TestClaimEndpoints:
             json={
                 "plate_ids": plate_ids,
                 "project_naam": "Bulk Project",
-                "project_fase": "Productie"
+                "project_fase": "001"
             }
         )
 
@@ -554,7 +554,7 @@ class TestClaimEndpoints:
             "/api/platestock/claims/release-by-project",
             json={
                 "project_naam": "Project X",
-                "project_fase": "Productie"
+                "project_fase": "001"
             }
         )
 

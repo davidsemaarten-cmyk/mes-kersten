@@ -211,77 +211,85 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
           </TabsList>
 
           {/* INFORMATIE TAB */}
-          <TabsContent value="informatie" className="flex-1 overflow-y-auto px-8 py-6 space-y-6 m-0">
+          <TabsContent value="informatie" className="flex-1 overflow-y-auto px-8 py-6 space-y-4 m-0">
             {/* Specifications Section */}
             <section>
-              <h3 className="text-sm font-medium text-gray-500 mb-4">Specificaties</h3>
-              <div className="grid grid-cols-2 gap-6">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3 pb-2 border-b border-gray-200">
+                Specificaties
+              </h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Materiaal</p>
-                  <p className="text-sm text-gray-900">{plate.material?.naam || plate.material_prefix}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Materiaal</p>
+                  <p className="text-sm font-medium text-gray-900">{plate.material?.naam || plate.material_prefix}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Kwaliteit</p>
-                  <p className="text-sm text-gray-900">{plate.quality}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Kwaliteit</p>
+                  <p className="text-sm font-medium text-gray-900">{plate.quality}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Plaatnummer</p>
-                  <p className="text-sm text-gray-900">{plate.plate_number}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Plaatnummer</p>
+                  <p className="font-mono text-sm font-medium text-gray-900">{plate.plate_number}</p>
                 </div>
                 {plate.material?.oppervlaktebewerking && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1">Oppervlaktebewerking</p>
-                    <p className="text-sm text-gray-900">{plate.material.oppervlaktebewerking}</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Oppervlaktebewerking</p>
+                    <p className="text-sm font-medium text-gray-900">{plate.material.oppervlaktebewerking}</p>
                   </div>
                 )}
               </div>
             </section>
 
-            <div className="border-t border-gray-200" />
-
             {/* Dimensions Section */}
-            <section>
-              <h3 className="text-sm font-medium text-gray-500 mb-4">Afmetingen & Gewicht</h3>
-              <div className="grid grid-cols-3 gap-6">
+            <section className="pt-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3 pb-2 border-b border-gray-200">
+                Afmetingen & Gewicht
+              </h3>
+              <div className="grid grid-cols-3 gap-x-6 gap-y-3">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Breedte</p>
-                  <p className="text-sm text-gray-900">{plate.width} mm</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Breedte</p>
+                  <p className="text-sm font-medium text-gray-900">{plate.width} mm</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Lengte</p>
-                  <p className="text-sm text-gray-900">{plate.length} mm</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Lengte</p>
+                  <p className="text-sm font-medium text-gray-900">{plate.length} mm</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Dikte</p>
-                  <p className="text-sm text-gray-900">{plate.thickness} mm</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Dikte</p>
+                  <p className="text-sm font-medium text-gray-900">{plate.thickness} mm</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Oppervlakte</p>
-                  <p className="text-sm text-gray-900 font-medium">{calculateArea()} m²</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Oppervlakte</p>
+                  <p className="text-sm font-semibold text-gray-900">{calculateArea()} m²</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Gewicht</p>
-                  <p className="text-sm text-gray-900">{plate.weight ? `${plate.weight} kg` : '-'}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Gewicht</p>
+                  <p className="text-sm font-medium text-gray-900">{plate.weight ? `${plate.weight} kg` : '-'}</p>
                 </div>
               </div>
             </section>
-
-            <div className="border-t border-gray-200" />
 
             {/* Location Section */}
-            <section>
-              <h3 className="text-sm font-medium text-gray-500 mb-4">Locatie</h3>
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Huidige locatie</p>
-                <p className="text-sm text-gray-900">{plate.location || '-'}</p>
+            <section className="pt-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3 pb-2 border-b border-gray-200">
+                Locatie & Tracering
+              </h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Huidige locatie</p>
+                  <p className="text-sm font-medium text-gray-900">{plate.location || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Heatnummer</p>
+                  <p className="font-mono text-sm font-medium text-gray-900">{plate.heatnummer || '-'}</p>
+                </div>
               </div>
             </section>
 
-            <div className="border-t border-gray-200" />
-
             {/* Notes Section - EDITABLE */}
-            <section>
-              <h3 className="text-sm font-medium text-gray-500 mb-4">Notities</h3>
+            <section className="pt-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3 pb-2 border-b border-gray-200">
+                Notities
+              </h3>
               <div className="space-y-2">
                 <Textarea
                   id="notes"
@@ -317,16 +325,18 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
             <div className="border-t border-gray-200" />
 
             {/* Metadata Section */}
-            <section>
-              <h3 className="text-sm font-medium text-gray-500 mb-4">Metadata</h3>
-              <div className="grid grid-cols-2 gap-6">
+            <section className="pt-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3 pb-2 border-b border-gray-200">
+                Metadata
+              </h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Aangemaakt door</p>
-                  <p className="text-sm text-gray-900">{plate.creator?.full_name || 'Onbekend'}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Aangemaakt door</p>
+                  <p className="text-sm font-medium text-gray-900">{plate.creator?.full_name || 'Onbekend'}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Aangemaakt op</p>
-                  <p className="text-sm text-gray-900">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Aangemaakt op</p>
+                  <p className="text-sm font-medium text-gray-900">
                     {new Date(plate.created_at).toLocaleDateString('nl-NL', {
                       day: 'numeric',
                       month: 'long',
@@ -337,34 +347,6 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
               </div>
             </section>
 
-            <div className="border-t border-gray-200" />
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 justify-end pb-4">
-              {/* Van Laser button - Only for werkplaats role */}
-              {user?.role === 'werkplaats' && plate.status === 'bij_laser' && (
-                <Button
-                  variant="outline"
-                  onClick={handleVanLaser}
-                  disabled={moveFromLaser.isPending}
-                  className="border-gray-300 hover:bg-gray-50"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Van Laser
-                </Button>
-              )}
-
-              {/* Consumeren button - Available to all roles with permission */}
-              <Button
-                variant="destructive"
-                onClick={handleConsume}
-                disabled={consumePlate.isPending || plate.is_consumed}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Consumeren
-              </Button>
-            </div>
           </TabsContent>
 
           {/* CLAIMS TAB */}

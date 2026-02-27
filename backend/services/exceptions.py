@@ -6,7 +6,10 @@ Provides specific exception types for better error handling and HTTP status code
 
 class ServiceError(Exception):
     """Base exception for all service layer errors"""
-    pass
+    def __init__(self, message: str = None, **kwargs):
+        self.message = message or self.__class__.__name__
+        self.details = kwargs
+        super().__init__(self.message)
 
 
 # =====================================================
@@ -103,6 +106,30 @@ class PlateNumberGenerationException(ServiceError):
 
 class ClaimOnConsumedPlateException(ServiceError):
     """Raised when trying to claim a consumed plate"""
+    pass
+
+
+# =====================================================
+# Laserplanner Exceptions
+# =====================================================
+
+class LaserJobNotFoundError(ServiceError):
+    """Raised when a laser job is not found"""
+    pass
+
+
+class LaserJobNameExistsError(ServiceError):
+    """Raised when attempting to create a job with duplicate name"""
+    pass
+
+
+class InvalidCSVFormatError(ServiceError):
+    """Raised when CSV format is invalid"""
+    pass
+
+
+class LaserLineItemNotFoundError(ServiceError):
+    """Raised when a laser line item is not found"""
     pass
 
 

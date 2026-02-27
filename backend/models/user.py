@@ -28,5 +28,12 @@ class User(Base):
     # Relationships
     roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
 
+    @property
+    def role(self) -> str:
+        """Get user's primary role (first role if multiple exist)"""
+        if self.roles and len(self.roles) > 0:
+            return self.roles[0].role
+        return ""
+
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, full_name={self.full_name})>"

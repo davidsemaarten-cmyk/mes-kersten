@@ -25,6 +25,7 @@ class Plate(Base):
     length = Column(Integer, nullable=False)
     weight = Column(Numeric(8, 2), nullable=True)
     location = Column(String, nullable=True, index=True)
+    heatnummer = Column(String(100), nullable=True)
     notes = Column(String, nullable=True)
     barcode = Column(String, nullable=True)
     status = Column(String, default='beschikbaar', nullable=False, index=True)

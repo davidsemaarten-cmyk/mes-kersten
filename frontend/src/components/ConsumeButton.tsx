@@ -58,6 +58,7 @@ export function ConsumeButton({ plate }: ConsumeButtonProps) {
         size="sm"
         onClick={() => setOpen(true)}
         disabled={isLoading}
+        className="text-red-600 border-red-200 hover:bg-red-50"
       >
         <Trash2 className="h-3 w-3 mr-1" />
         Verbruikt

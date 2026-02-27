@@ -72,7 +72,12 @@ export function LocationReturnButton({ plate }: LocationReturnButtonProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isLoading}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isLoading}
+          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+        >
           <Package className="h-3 w-3 mr-1" />
           Terugleggen
         </Button>

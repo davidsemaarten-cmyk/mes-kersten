@@ -3,6 +3,7 @@
  * Phase 6: Searchable combobox for selecting project phases
  *
  * Fetches fases from a selected project and provides search/autocomplete
+ * Returns fase ID instead of fase_nummer for API compatibility
  */
 
 import * as React from 'react'
@@ -44,7 +45,7 @@ export function FaseCombobox({
   const [open, setOpen] = React.useState(false)
   const { data: fases = [], isLoading } = useFases(projectId || undefined)
 
-  const selectedFase = fases.find((f) => f.fase_nummer === value)
+  const selectedFase = fases.find((f) => f.id === value)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -75,14 +76,14 @@ export function FaseCombobox({
                   key={fase.id}
                   value={`${fase.fase_nummer} ${fase.beschrijving || ''}`}
                   onSelect={() => {
-                    onValueChange(fase.fase_nummer)
+                    onValueChange(fase.id)
                     setOpen(false)
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === fase.fase_nummer ? "opacity-100" : "opacity-0"
+                      value === fase.id ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {fase.fase_nummer}

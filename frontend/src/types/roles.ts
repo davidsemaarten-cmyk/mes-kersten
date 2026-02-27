@@ -68,6 +68,10 @@ export interface RolePermissions {
   canUploadCertificates: boolean
   canExportCertificates: boolean
 
+  // Laserplanner Permissions
+  canPlanLaser: boolean
+  canViewLaserQueue: boolean
+
   // Special Permissions
   canViewOnly: boolean  // True for tekenaar role
   canSwitchRoles: boolean  // True for admin role
@@ -107,6 +111,8 @@ export const DEFAULT_PERMISSIONS: Readonly<RolePermissions> = Object.freeze({
   canMarkOrderComplete: false,
   canUploadCertificates: false,
   canExportCertificates: false,
+  canPlanLaser: false,
+  canViewLaserQueue: false,
   canViewOnly: false,
   canSwitchRoles: false,
 })
@@ -151,6 +157,8 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canMarkOrderComplete: true,
         canUploadCertificates: true,
         canExportCertificates: true,
+        canPlanLaser: true,
+        canViewLaserQueue: true,
         canViewOnly: false,
         canSwitchRoles: true,
       }
@@ -182,6 +190,8 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canMarkOrderComplete: false,  // Only werkplaats can mark complete
         canUploadCertificates: true,
         canExportCertificates: true,
+        canPlanLaser: true,
+        canViewLaserQueue: true,
         canViewOnly: false,
         canSwitchRoles: false,
       }
@@ -213,6 +223,8 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canMarkOrderComplete: true,
         canUploadCertificates: false,
         canExportCertificates: false,
+        canPlanLaser: false,
+        canViewLaserQueue: false,
         canViewOnly: false,
         canSwitchRoles: false,
       }
@@ -244,6 +256,8 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canMarkOrderComplete: true,
         canUploadCertificates: true,  // Primary responsibility: upload certificates on material intake
         canExportCertificates: false,
+        canPlanLaser: false,
+        canViewLaserQueue: false,
         canViewOnly: false,
         canSwitchRoles: false,
       }
@@ -275,6 +289,8 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canMarkOrderComplete: false,
         canUploadCertificates: false,
         canExportCertificates: false,
+        canPlanLaser: false,
+        canViewLaserQueue: false,
         canViewOnly: true,
         canSwitchRoles: false,
       }
@@ -308,6 +324,8 @@ export function getRolePermissions(role: UserRole): RolePermissions {
         canMarkOrderComplete: true,  // Mark assigned orders complete
         canUploadCertificates: false,
         canExportCertificates: false,
+        canPlanLaser: false,
+        canViewLaserQueue: true,  // Can view laser queue
         canViewOnly: false,
         canSwitchRoles: false,
       }

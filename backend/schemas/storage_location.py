@@ -2,9 +2,10 @@
 Pydantic schemas for Storage Location API
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 
 class StorageLocationBase(BaseModel):
@@ -27,13 +28,17 @@ class StorageLocationUpdate(BaseModel):
 
 class StorageLocationResponse(StorageLocationBase):
     """Schema for storage location in responses"""
-    id: str
+    id: UUID
     actief: bool
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer('id')
+    def serialize_id(self, value: UUID) -> str:
+        """Convert UUID to string for JSON serialization"""
+        return str(value)
 
 
 class StorageLocationList(BaseModel):

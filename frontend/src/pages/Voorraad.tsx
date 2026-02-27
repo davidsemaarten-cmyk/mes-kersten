@@ -36,13 +36,12 @@ import { DraggableTableHeader } from '../components/DraggableTableHeader'
 import { usePlates } from '../hooks/usePlateStock'
 import { useColumnPreferences } from '../hooks/useColumnPreferences'
 import type { PlateWithRelations } from '../types/database'
-import { Plus, Package, Loader2, Search, X, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Package, Loader2, X, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 
 type SortDirection = 'asc' | 'desc' | null
 type StatusFilter = 'alle' | 'bij_laser' | 'beschikbaar' | 'geclaimd'
 
 export function Voorraad() {
-  const [searchQuery, setSearchQuery] = useState('')
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [bulkClaimModalOpen, setBulkClaimModalOpen] = useState(false)
   const [selectedPlate, setSelectedPlate] = useState<PlateWithRelations | null>(null)
@@ -77,7 +76,8 @@ export function Voorraad() {
     specificatie: '',
     afmeting: '',
     dikte: '',
-    locatie: ''
+    locatie: '',
+    heatnummer: ''
   })
 
   const { data: plates, isLoading } = usePlates({ include_consumed: false })
@@ -142,7 +142,8 @@ export function Voorraad() {
       specificaties: [],
       afmetingen: [],
       diktes: [],
-      locaties: []
+      locaties: [],
+      heatnummers: []
     }
 
     const plaatnummers = Array.from(new Set(plates.map(p => p.plate_number))).sort()
@@ -159,8 +160,9 @@ export function Voorraad() {
     const afmetingen = Array.from(new Set(plates.map(p => `${p.width} × ${p.length}`))).sort()
     const diktes = Array.from(new Set(plates.map(p => `${p.thickness}`))).sort((a, b) => parseFloat(a) - parseFloat(b))
     const locaties = Array.from(new Set(plates.map(p => p.location).filter(Boolean) as string[])).sort()
+    const heatnummers = Array.from(new Set(plates.map(p => p.heatnummer).filter(Boolean) as string[])).sort()
 
-    return { plaatnummers, statuses, claims, materialen, specificaties, afmetingen, diktes, locaties }
+    return { plaatnummers, statuses, claims, materialen, specificaties, afmetingen, diktes, locaties, heatnummers }
   }, [plates])
 
   // Calculate status counts
@@ -184,20 +186,6 @@ export function Voorraad() {
     // Apply status tab filter first
     if (statusFilter !== 'alle') {
       filtered = filtered.filter(p => p.status === statusFilter)
-    }
-
-    // Apply search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(plate => {
-        return (
-          plate.plate_number.toLowerCase().includes(query) ||
-          plate.material_prefix.toLowerCase().includes(query) ||
-          plate.quality.toLowerCase().includes(query) ||
-          plate.location?.toLowerCase().includes(query) ||
-          plate.material?.naam?.toLowerCase().includes(query)
-        )
-      })
     }
 
     // Apply column filters
@@ -244,6 +232,10 @@ export function Voorraad() {
       const query = columnFilters.locatie.toLowerCase()
       filtered = filtered.filter(p => (p.location || '').toLowerCase().includes(query))
     }
+    if (columnFilters.heatnummer) {
+      const query = columnFilters.heatnummer.toLowerCase()
+      filtered = filtered.filter(p => (p.heatnummer || '').toLowerCase().includes(query))
+    }
 
     // Apply sorting (after filtering)
     if (thicknessSortDirection) {
@@ -260,7 +252,7 @@ export function Voorraad() {
     }
 
     return filtered
-  }, [plates, statusFilter, searchQuery, columnFilters, thicknessSortDirection])
+  }, [plates, statusFilter, columnFilters, thicknessSortDirection])
 
   const handlePlateClick = (plate: PlateWithRelations) => {
     setSelectedPlate(plate)
@@ -283,7 +275,8 @@ export function Voorraad() {
       specificatie: '',
       afmeting: '',
       dikte: '',
-      locatie: ''
+      locatie: '',
+      heatnummer: ''
     })
     setThicknessSortDirection(null)
   }
@@ -390,19 +383,6 @@ export function Voorraad() {
           </TabsTrigger>
         </TabsList>
       </Tabs>
-
-      {/* Search Bar */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Zoek op plaatnummer, materiaal, kwaliteit, locatie..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 border-gray-300 bg-white"
-          />
-        </div>
-      </div>
 
       {/* Loading State */}
       {isLoading && (

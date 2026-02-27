@@ -5,7 +5,6 @@
 
 import { Badge } from '../components/ui/badge'
 import { Tooltip } from '../components/ui/tooltip'
-import { NaarLaserButton } from '../components/NaarLaserButton'
 import { QuickClaimButton } from '../components/QuickClaimButton'
 import type { ColumnConfig } from '../types/columns'
 import type { PlateWithRelations } from '../types/database'
@@ -262,17 +261,30 @@ export const DEFAULT_VOORRAAD_COLUMNS: ColumnConfig[] = [
     sortable: false,
   },
   {
+    id: 'heatnummer',
+    label: 'Heatnummer',
+    accessor: (plate) => (
+      <span className="font-mono text-sm text-gray-900">
+        {plate.heatnummer || <span className="text-gray-400">-</span>}
+      </span>
+    ),
+    visible: false, // Hidden by default
+    order: 12,
+    minWidth: '140px',
+    filterable: true,
+    sortable: true,
+  },
+  {
     id: 'acties',
     label: 'Acties',
     accessor: (plate) => (
       <div className="flex gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
-        <NaarLaserButton plate={plate} />
         <QuickClaimButton plate={plate} />
       </div>
     ),
     visible: true,
     order: 12,
-    minWidth: '200px',
+    minWidth: '140px',
     filterable: false,
     sortable: false,
   },

@@ -22,16 +22,23 @@ import {
   useDeleteMaterial
 } from '../hooks/usePlateStock'
 import type { Material } from '../types/database'
-import { Plus, Trash2, Loader2, Settings, Palette, MapPin, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Loader2, Settings, Palette, MapPin, ChevronRight, Edit2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AddMaterialModal } from '../components/AddMaterialModal'
 
 export function Admin() {
   const [addModalOpen, setAddModalOpen] = useState(false)
+  const [editMaterial, setEditMaterial] = useState<Material | null>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
 
   const { data: materials, isLoading } = useMaterials()
   const deleteMaterial = useDeleteMaterial()
 
+
+  const handleEdit = (material: Material) => {
+    setEditMaterial(material)
+    setEditModalOpen(true)
+  }
 
   const handleDelete = async (material: Material) => {
     if (!confirm(`Weet je zeker dat je ${material.materiaalgroep} ${material.oppervlaktebewerking} wilt verwijderen?`)) {
@@ -150,14 +157,23 @@ export function Admin() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(material)}
-                          disabled={deleteMaterial.isPending}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </Button>
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(material)}
+                          >
+                            <Edit2 className="w-4 h-4 text-blue-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(material)}
+                            disabled={deleteMaterial.isPending}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -177,6 +193,16 @@ export function Admin() {
       <AddMaterialModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
+      />
+
+      {/* Edit Material Modal */}
+      <AddMaterialModal
+        open={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false)
+          setEditMaterial(null)
+        }}
+        material={editMaterial}
       />
     </Layout>
   )
