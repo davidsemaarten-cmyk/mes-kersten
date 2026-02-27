@@ -143,12 +143,12 @@ export function Claims() {
 
   return (
     <Layout>
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Claims</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl font-semibold text-gray-900">Claims</h1>
+          <p className="text-sm text-gray-600 mt-1">
             {claims ? `${activeClaims.length} actieve claims` : 'Laden...'}
           </p>
         </div>
@@ -227,7 +227,7 @@ export function Claims() {
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground">Claims laden...</p>
+          <p className="text-sm text-gray-600">Claims laden...</p>
         </div>
       )}
 
@@ -235,9 +235,9 @@ export function Claims() {
       {!isLoading && filteredClaims.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Package className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Geen claims gevonden</h3>
-            <p className="text-muted-foreground">
+            <Package className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold mb-2 text-gray-900">Geen claims gevonden</h3>
+            <p className="text-sm text-gray-600">
               {searchQuery
                 ? 'Probeer een andere zoekopdracht'
                 : filterStatus === 'active'

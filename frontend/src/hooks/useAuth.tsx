@@ -18,29 +18,28 @@ interface AuthProviderProps {
 /**
  * Auth Context Provider
  * Manages authentication state and provides auth functions
- * Following PROJECT-MASTER.md pattern
+ * Uses httpOnly cookies for secure token storage (XSS protection)
  */
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Check for existing session on mount
+  // Check for existing session on mount by calling /api/auth/me
   useEffect(() => {
-    const initAuth = () => {
-      const token = localStorage.getItem('token')
-      const storedUser = localStorage.getItem('user')
+    const initAuth = async () => {
+      try {
+        // Try to get current user from server (cookie will be sent automatically)
+        const response = await api.get('/api/auth/me')
 
-      if (token && storedUser) {
-        try {
-          setUser(JSON.parse(storedUser))
-        } catch (error) {
-          console.error('Failed to parse stored user:', error)
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
+        if (response.data) {
+          setUser(response.data)
         }
+      } catch (error) {
+        // No valid session - user needs to login
+        setUser(null)
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
     }
 
     initAuth()
@@ -49,21 +48,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string) => {
     try {
       const response = await api.post('/api/auth/login', { email, password })
-      
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token)
-        localStorage.setItem('user', JSON.stringify(response.data.user))
+
+      // Token is stored in httpOnly cookie by server
+      // Response contains user info + CSRF token (NO JWT token in body)
+      if (response.data.user) {
         setUser(response.data.user)
+        // CSRF token is automatically stored in cookie by server
+        // No need to manually handle it - axios interceptor will read it
       }
     } catch (error) {
       throw error
     }
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setUser(null)
+  const logout = async () => {
+    try {
+      // Call logout endpoint to clear httpOnly cookie
+      await api.post('/api/auth/logout')
+    } catch (error) {
+      // Even if logout fails, clear local state
+      console.error('Logout error:', error)
+    } finally {
+      setUser(null)
+    }
   }
 
   return (

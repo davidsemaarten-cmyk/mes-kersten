@@ -86,6 +86,7 @@ class PlateBase(BaseModel):
     length: int = Field(..., gt=0, le=20000, description="Length in mm (max 20m)")
     weight: Optional[Decimal] = Field(None, ge=0, le=100000, description="Weight in kg (max 100 tons)")
     location: Optional[str] = Field(None, max_length=100)
+    heatnummer: Optional[str] = Field(None, max_length=100, description="Heat/batch certification number")
     notes: Optional[str] = Field(None, max_length=1000)
 
     @field_validator('material_prefix')
@@ -100,52 +101,17 @@ class PlateBase(BaseModel):
 
     @field_validator('quality', 'location')
     @classmethod
-    def validate_string_fields(cls, v: Optional[str]) -> Optional[str]:
-        """Validate string fields don't contain SQL injection patterns"""
+    def strip_string_fields(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
-
-        import re
-        # Check for common SQL injection patterns
-        dangerous_patterns = [
-            r"('|\"|\`)\s*(OR|AND)\s*('|\"|\`)?\s*\d+\s*=\s*\d+",  # ' OR 1=1
-            r";\s*(DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|TRUNCATE)",  # SQL commands
-            r"(UNION|JOIN)\s+(SELECT|ALL)",  # UNION SELECT
-            r"--",  # SQL comments
-            r"/\*.*\*/",  # SQL block comments
-            r"xp_cmdshell",  # SQL Server command execution
-            r"EXEC(UTE)?",  # EXECUTE command
-        ]
-
-        v_upper = v.upper()
-        for pattern in dangerous_patterns:
-            if re.search(pattern, v_upper, re.IGNORECASE):
-                raise ValueError(f'Input contains potentially dangerous SQL pattern')
-
         return v.strip()
 
     @field_validator('notes')
     @classmethod
-    def validate_notes(cls, v: Optional[str]) -> Optional[str]:
-        """Validate notes field with XSS and SQL injection protection"""
+    def strip_notes(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
-
-        import re
-        # Check for script tags and SQL injection
-        dangerous_patterns = [
-            r"<script[^>]*>.*?</script>",  # Script tags
-            r"javascript:",  # Javascript protocol
-            r"on\w+\s*=",  # Event handlers
-            r"('|\"|\`)\s*(OR|AND)\s*('|\"|\`)?\s*\d+\s*=\s*\d+",  # SQL injection
-            r";\s*(DROP|DELETE|UPDATE|INSERT)",  # SQL commands
-        ]
-
-        for pattern in dangerous_patterns:
-            if re.search(pattern, v, re.IGNORECASE):
-                raise ValueError('Notes contain potentially dangerous content')
-
-        return v.strip()[:1000]  # Limit to 1000 chars
+        return v.strip()
 
     @field_validator('weight')
     @classmethod
@@ -258,6 +224,29 @@ class VanLaserRequest(BaseModel):
     new_location: str = Field(..., min_length=1, max_length=100)
 
 
+class RemnantRequest(BaseModel):
+    """Request to process remnant from laser-cut plate"""
+    new_width: int = Field(..., gt=0, le=10000, description="Remnant width in mm (max 10m)")
+    new_length: int = Field(..., gt=0, le=20000, description="Remnant length in mm (max 20m)")
+    new_location: str = Field(..., min_length=1, max_length=100)
+    notes: Optional[str] = Field(None, max_length=1000)
+
+    @field_validator('notes')
+    @classmethod
+    def strip_notes(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        return v.strip()
+
+
+class RemnantResponse(BaseModel):
+    """Response for remnant processing"""
+    original_plate: 'PlateResponse'  # Consumed original
+    remnant_plate: 'PlateResponse'  # New remnant plate
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ============================================================
 # CLAIM SCHEMAS
 # ============================================================
@@ -272,51 +261,18 @@ class ClaimBase(BaseModel):
     @field_validator('project_naam')
     @classmethod
     def validate_project_naam(cls, v: str) -> str:
-        """Validate project name doesn't contain dangerous patterns"""
+        """Validate project name format: letters, numbers, spaces, hyphens, underscores, dots"""
         import re
-
-        # Check for SQL injection patterns
-        dangerous_patterns = [
-            r"('|\"|\`)\s*(OR|AND)\s*('|\"|\`)?\s*\d+\s*=\s*\d+",  # ' OR 1=1
-            r";\s*(DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|TRUNCATE)",  # SQL commands
-            r"(UNION|JOIN)\s+(SELECT|ALL)",  # UNION SELECT
-            r"--",  # SQL comments
-            r"/\*.*\*/",  # SQL block comments
-        ]
-
-        v_upper = v.upper()
-        for pattern in dangerous_patterns:
-            if re.search(pattern, v_upper, re.IGNORECASE):
-                raise ValueError('Project name contains potentially dangerous SQL pattern')
-
-        # Only allow alphanumeric, spaces, hyphens, underscores, and dots
         if not re.match(r'^[A-Za-z0-9\s\-_.]+$', v):
-            raise ValueError('Project name must contain only letters, numbers, spaces, hyphens, underscores, and dots')
-
+            raise ValueError('Projectnaam mag alleen letters, cijfers, spaties, koppeltekens, underscores en punten bevatten')
         return v.strip()
 
     @field_validator('notes')
     @classmethod
-    def validate_claim_notes(cls, v: Optional[str]) -> Optional[str]:
-        """Validate notes field with XSS and SQL injection protection"""
+    def strip_notes(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
-
-        import re
-        # Check for script tags and SQL injection
-        dangerous_patterns = [
-            r"<script[^>]*>.*?</script>",  # Script tags
-            r"javascript:",  # Javascript protocol
-            r"on\w+\s*=",  # Event handlers
-            r"('|\"|\`)\s*(OR|AND)\s*('|\"|\`)?\s*\d+\s*=\s*\d+",  # SQL injection
-            r";\s*(DROP|DELETE|UPDATE|INSERT)",  # SQL commands
-        ]
-
-        for pattern in dangerous_patterns:
-            if re.search(pattern, v, re.IGNORECASE):
-                raise ValueError('Notes contain potentially dangerous content')
-
-        return v.strip()[:1000]  # Limit to 1000 chars
+        return v.strip()
 
 
 class ClaimCreate(ClaimBase):

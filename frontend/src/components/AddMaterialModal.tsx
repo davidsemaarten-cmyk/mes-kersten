@@ -4,15 +4,17 @@ import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
-import { usePrefixSuggestion, useCreateMaterial } from '../hooks/usePlateStock'
-import type { MaterialCreate } from '../types/database'
+import { usePrefixSuggestion, useCreateMaterial, useUpdateMaterial } from '../hooks/usePlateStock'
+import type { MaterialCreate, Material } from '../types/database'
 
 interface AddMaterialModalProps {
   open: boolean
   onClose: () => void
+  material?: Material | null
 }
 
-export function AddMaterialModal({ open, onClose }: AddMaterialModalProps) {
+export function AddMaterialModal({ open, onClose, material }: AddMaterialModalProps) {
+  const isEditMode = !!material
   const [formData, setFormData] = useState<MaterialCreate>({
     materiaalgroep: '',
     specificatie: null,
@@ -25,10 +27,24 @@ export function AddMaterialModal({ open, onClose }: AddMaterialModalProps) {
 
   const prefixSuggestion = usePrefixSuggestion()
   const createMaterial = useCreateMaterial()
+  const updateMaterial = useUpdateMaterial()
 
-  // Auto-suggest prefix when fields change
+  // Initialize form data when material prop changes (for edit mode)
   useEffect(() => {
-    if (formData.materiaalgroep && formData.oppervlaktebewerking) {
+    if (material) {
+      setFormData({
+        materiaalgroep: material.materiaalgroep,
+        specificatie: material.specificatie,
+        oppervlaktebewerking: material.oppervlaktebewerking,
+        plaatcode_prefix: material.plaatcode_prefix,
+        kleur: material.kleur
+      })
+    }
+  }, [material])
+
+  // Auto-suggest prefix when fields change (only in create mode)
+  useEffect(() => {
+    if (!isEditMode && formData.materiaalgroep && formData.oppervlaktebewerking) {
       prefixSuggestion.mutate({
         materiaalgroep: formData.materiaalgroep,
         specificatie: formData.specificatie,
@@ -40,24 +56,53 @@ export function AddMaterialModal({ open, onClose }: AddMaterialModalProps) {
         }
       })
     }
-  }, [formData.materiaalgroep, formData.specificatie, formData.oppervlaktebewerking])
+  }, [formData.materiaalgroep, formData.specificatie, formData.oppervlaktebewerking, isEditMode])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (prefixError) return
 
-    createMaterial.mutate(formData, {
-      onSuccess: () => {
-        onClose()
-        setFormData({
-          materiaalgroep: '',
-          specificatie: null,
-          oppervlaktebewerking: '',
-          plaatcode_prefix: '',
-          kleur: '#9CA3AF'
-        })
-      }
-    })
+    if (isEditMode && material) {
+      // Update existing material
+      updateMaterial.mutate(
+        {
+          id: material.id,
+          data: {
+            materiaalgroep: formData.materiaalgroep,
+            specificatie: formData.specificatie,
+            oppervlaktebewerking: formData.oppervlaktebewerking,
+            kleur: formData.kleur
+            // Note: plaatcode_prefix is NOT updated in edit mode
+          }
+        },
+        {
+          onSuccess: () => {
+            onClose()
+            setFormData({
+              materiaalgroep: '',
+              specificatie: null,
+              oppervlaktebewerking: '',
+              plaatcode_prefix: '',
+              kleur: '#9CA3AF'
+            })
+          }
+        }
+      )
+    } else {
+      // Create new material
+      createMaterial.mutate(formData, {
+        onSuccess: () => {
+          onClose()
+          setFormData({
+            materiaalgroep: '',
+            specificatie: null,
+            oppervlaktebewerking: '',
+            plaatcode_prefix: '',
+            kleur: '#9CA3AF'
+          })
+        }
+      })
+    }
   }
 
   // Specificatie is now always visible but optional (no conditional logic needed)
@@ -66,9 +111,11 @@ export function AddMaterialModal({ open, onClose }: AddMaterialModalProps) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Nieuw Materiaal Toevoegen</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Materiaal Bewerken' : 'Nieuw Materiaal Toevoegen'}</DialogTitle>
           <DialogDescription>
-            Vul de materiaal eigenschappen in. De plaatcode prefix wordt automatisch voorgesteld.
+            {isEditMode
+              ? 'Wijzig de materiaal eigenschappen. Let op: de plaatcode prefix kan niet worden gewijzigd als er platen bestaan.'
+              : 'Vul de materiaal eigenschappen in. De plaatcode prefix wordt automatisch voorgesteld.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -133,8 +180,15 @@ export function AddMaterialModal({ open, onClose }: AddMaterialModalProps) {
               placeholder="S235GE"
               maxLength={10}
               pattern="[A-Z0-9]+"
+              disabled={isEditMode}
+              className={isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}
             />
-            {formData.plaatcode_prefix && (
+            {isEditMode && material && material.plate_count! > 0 && (
+              <p className="text-sm text-amber-600 mt-1">
+                Prefix kan niet worden gewijzigd: {material.plate_count} platen gebruiken dit materiaal
+              </p>
+            )}
+            {!isEditMode && formData.plaatcode_prefix && (
               <p className="text-sm text-gray-500 mt-1">
                 Eerste plaat krijgt: <span className="font-mono">{formData.plaatcode_prefix}-001</span>
               </p>
@@ -175,10 +229,13 @@ export function AddMaterialModal({ open, onClose }: AddMaterialModalProps) {
                 !formData.materiaalgroep ||
                 !formData.oppervlaktebewerking ||
                 !formData.plaatcode_prefix ||
-                createMaterial.isPending
+                createMaterial.isPending ||
+                updateMaterial.isPending
               }
             >
-              {createMaterial.isPending ? 'Opslaan...' : 'Materiaal Toevoegen'}
+              {isEditMode
+                ? (updateMaterial.isPending ? 'Opslaan...' : 'Materiaal Bijwerken')
+                : (createMaterial.isPending ? 'Opslaan...' : 'Materiaal Toevoegen')}
             </Button>
           </DialogFooter>
         </form>

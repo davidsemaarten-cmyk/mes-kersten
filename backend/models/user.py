@@ -20,11 +20,20 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     full_name = Column(String, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    digital_signature_url = Column(String, nullable=True)
+    signature_uploaded_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     roles = relationship("UserRole", back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def role(self) -> str:
+        """Get user's primary role (first role if multiple exist)"""
+        if self.roles and len(self.roles) > 0:
+            return self.roles[0].role
+        return ""
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, full_name={self.full_name})>"

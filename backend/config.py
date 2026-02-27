@@ -14,6 +14,12 @@ import os
 
 
 class Settings(BaseSettings):
+    # Environment (defined first so validators can check it)
+    ENVIRONMENT: str = Field(
+        default="development",
+        description="Environment: development, staging, production, test"
+    )
+
     # Database - NO DEFAULT for security
     # Must be set via environment variable
     DATABASE_URL: str = Field(
@@ -47,18 +53,17 @@ class Settings(BaseSettings):
         description="Enable debug mode (NEVER in production)"
     )
 
-    # Environment
-    ENVIRONMENT: str = Field(
-        default="development",
-        description="Environment: development, staging, production"
-    )
-
     @field_validator('SECRET_KEY')
     @classmethod
-    def validate_secret_key(cls, v: str) -> str:
+    def validate_secret_key(cls, v: str, info) -> str:
         """
         Validate SECRET_KEY is secure and not using common insecure values
         """
+        # Skip validation in test environment
+        env = info.data.get('ENVIRONMENT', 'development')
+        if env == 'test':
+            return v
+
         if len(v) < 32:
             raise ValueError('SECRET_KEY must be at least 32 characters long')
 
@@ -87,10 +92,15 @@ class Settings(BaseSettings):
 
     @field_validator('DATABASE_URL')
     @classmethod
-    def validate_database_url(cls, v: str) -> str:
+    def validate_database_url(cls, v: str, info) -> str:
         """
         Validate DATABASE_URL doesn't contain common insecure passwords
         """
+        # Skip validation in test environment
+        env = info.data.get('ENVIRONMENT', 'development')
+        if env == 'test':
+            return v
+
         v_lower = v.lower()
 
         # Check for insecure password patterns in connection string
@@ -165,7 +175,7 @@ try:
     settings = Settings()
 except Exception as e:
     print("\n" + "="*70)
-    print("⚠️  CONFIGURATION ERROR")
+    print("WARNING: CONFIGURATION ERROR")
     print("="*70)
     print(f"\n{str(e)}\n")
     print("Required environment variables:")

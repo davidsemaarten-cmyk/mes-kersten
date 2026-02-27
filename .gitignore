@@ -50,6 +50,7 @@ dist-ssr/
 data/projects/
 data/temp/
 *.log
+logs/
 
 # Database
 *.db

@@ -11,6 +11,7 @@ import { Label } from './ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Textarea } from './ui/textarea'
 import { useMaterials, useCreatePlates } from '../hooks/usePlateStock'
+import { useStorageLocations } from '../hooks/useStorageLocations'
 import type { PlateCreate } from '../types/database'
 
 interface AddPlatesModalProps {
@@ -18,21 +19,19 @@ interface AddPlatesModalProps {
   onClose: () => void
 }
 
-const LOCATIONS = [
-  'Lade 1', 'Lade 2', 'Lade 3', 'Lade 4', 'Lade 5',
-  'Lade 6', 'Lade 7', 'Lade 8', 'Lade 9', 'Lade 10',
-  'Pallet 1', 'Pallet 2', 'Pallet 3', 'Pallet 4', 'Pallet 5',
-  'Rest'
-]
-
 export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
   const { data: materials } = useMaterials()
   const createPlates = useCreatePlates()
+  const { data: storageLocations } = useStorageLocations(false)
 
   // Material selection state
   const [selectedMaterialGroep, setSelectedMaterialGroep] = useState<string>('')
   const [selectedSpecificatie, setSelectedSpecificatie] = useState<string>('')
   const [selectedOppervlaktebewerking, setSelectedOppervlaktebewerking] = useState<string>('')
+
+  // Common dimensions
+  const [useCustomWidth, setUseCustomWidth] = useState(false)
+  const [useCustomLength, setUseCustomLength] = useState(false)
 
   const [formData, setFormData] = useState<PlateCreate & { aantal: number }>({
     material_prefix: '',
@@ -42,9 +41,14 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
     length: 0,
     weight: undefined,
     location: '',
+    heatnummer: '',
     notes: '',
     aantal: 1
   })
+
+  // Common plate dimensions (in mm)
+  const commonWidths = [1000, 1250, 1500, 2000, 2500, 3000]
+  const commonLengths = [2000, 2500, 3000, 4000, 5000, 6000]
 
   // Get unique materiaalgroepen
   const materiaalgroepen = useMemo(() => {
@@ -126,6 +130,8 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
       setSelectedMaterialGroep('')
       setSelectedSpecificatie('')
       setSelectedOppervlaktebewerking('')
+      setUseCustomWidth(false)
+      setUseCustomLength(false)
       setFormData({
         material_prefix: '',
         quality: '',
@@ -134,6 +140,7 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
         length: 0,
         weight: undefined,
         location: '',
+        heatnummer: '',
         notes: '',
         aantal: 1
       })
@@ -283,30 +290,108 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
 
             <div className="space-y-2">
               <Label htmlFor="width">Breedte (mm) *</Label>
-              <Input
-                id="width"
-                type="number"
-                min="0"
-                value={formData.width || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, width: parseInt(e.target.value) })
-                }
-                required
-              />
+              {!useCustomWidth ? (
+                <Select
+                  value={formData.width.toString()}
+                  onValueChange={(value) => {
+                    if (value === 'custom') {
+                      setUseCustomWidth(true)
+                      setFormData({ ...formData, width: 0 })
+                    } else {
+                      setFormData({ ...formData, width: parseInt(value) })
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecteer breedte" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {commonWidths.map((w) => (
+                      <SelectItem key={`width-${w}`} value={w.toString()}>
+                        {w} mm
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Aangepaste maat...</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.width || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, width: parseInt(e.target.value) })
+                    }
+                    placeholder="Voer breedte in"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setUseCustomWidth(false)
+                      setFormData({ ...formData, width: 0 })
+                    }}
+                  >
+                    Kies
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="length">Lengte (mm) *</Label>
-              <Input
-                id="length"
-                type="number"
-                min="0"
-                value={formData.length || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, length: parseInt(e.target.value) })
-                }
-                required
-              />
+              {!useCustomLength ? (
+                <Select
+                  value={formData.length.toString()}
+                  onValueChange={(value) => {
+                    if (value === 'custom') {
+                      setUseCustomLength(true)
+                      setFormData({ ...formData, length: 0 })
+                    } else {
+                      setFormData({ ...formData, length: parseInt(value) })
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecteer lengte" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {commonLengths.map((l) => (
+                      <SelectItem key={`length-${l}`} value={l.toString()}>
+                        {l} mm
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Aangepaste maat...</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.length || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, length: parseInt(e.target.value) })
+                    }
+                    placeholder="Voer lengte in"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setUseCustomLength(false)
+                      setFormData({ ...formData, length: 0 })
+                    }}
+                  >
+                    Kies
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -350,13 +435,33 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
                 <SelectValue placeholder="Selecteer locatie" />
               </SelectTrigger>
               <SelectContent>
-                {LOCATIONS.map((loc) => (
-                  <SelectItem key={`location-${loc}`} value={loc}>
-                    {loc}
+                {storageLocations?.map((loc) => (
+                  <SelectItem key={`location-${loc.id}`} value={loc.naam}>
+                    {loc.naam}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Heat Number */}
+          <div className="space-y-2">
+            <Label htmlFor="heatnummer">
+              Heatnummer <span className="text-sm text-gray-500">(optioneel)</span>
+            </Label>
+            <Input
+              id="heatnummer"
+              type="text"
+              placeholder="Bijv. HEAT-2024-12345"
+              maxLength={100}
+              value={formData.heatnummer}
+              onChange={(e) =>
+                setFormData({ ...formData, heatnummer: e.target.value })
+              }
+            />
+            <p className="text-xs text-gray-500">
+              Heat/batch certificeringsnummer voor materiaal traceerbaarheid
+            </p>
           </div>
 
           {/* Quantity */}

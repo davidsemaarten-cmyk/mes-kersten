@@ -234,8 +234,10 @@ export function useMoveToLaser() {
       const response = await api.post<Plate>(`/api/platestock/plates/${id}/naar-laser`)
       return response.data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plates'] })
+    onSuccess: async () => {
+      // Wait for queries to refetch before showing success
+      await queryClient.invalidateQueries({ queryKey: ['plates'] })
+      await queryClient.invalidateQueries({ queryKey: ['stats'] })
       toast.success('Plaat naar laser verplaatst')
     },
     onError: (error: any) => {
@@ -252,8 +254,10 @@ export function useMoveFromLaser() {
       const response = await api.post<Plate>(`/api/platestock/plates/${id}/van-laser`, data)
       return response.data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plates'] })
+    onSuccess: async () => {
+      // Wait for queries to refetch before showing success
+      await queryClient.invalidateQueries({ queryKey: ['plates'] })
+      await queryClient.invalidateQueries({ queryKey: ['stats'] })
       toast.success('Plaat van laser gehaald')
     },
     onError: (error: any) => {
@@ -270,10 +274,11 @@ export function useConsumePlate() {
       const response = await api.post<Plate>(`/api/platestock/plates/${id}/consume`)
       return response.data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plates'] })
-      queryClient.invalidateQueries({ queryKey: ['claims'] })
-      queryClient.invalidateQueries({ queryKey: ['stats'] })
+    onSuccess: async () => {
+      // Wait for queries to refetch before showing success
+      await queryClient.invalidateQueries({ queryKey: ['plates'] })
+      await queryClient.invalidateQueries({ queryKey: ['claims'] })
+      await queryClient.invalidateQueries({ queryKey: ['stats'] })
       toast.success('Plaat geconsumeerd')
     },
     onError: (error: any) => {

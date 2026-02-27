@@ -20,7 +20,7 @@ from schemas.platestock import (
     PrefixSuggestionRequest, PrefixSuggestionResponse,
     # Plate schemas
     PlateCreate, PlateUpdate, PlateResponse, PlateWithRelations,
-    VanLaserRequest, UserSummary, PlateBulkCreate,
+    VanLaserRequest, RemnantRequest, RemnantResponse, UserSummary, PlateBulkCreate,
     # Claim schemas
     ClaimCreate, ClaimUpdate, ClaimResponse, ClaimWithPlate,
     ClaimBulkCreate, BulkClaimResponse,
@@ -30,32 +30,15 @@ from schemas.platestock import (
 )
 from services.platestock import PlateStockService
 from utils.auth import get_current_user
+from utils.permissions import require_admin, require_admin_or_werkvoorbereider, require_werkplaats_access
 
 router = APIRouter()
 
 
 # ============================================================
-# HELPER FUNCTIONS
+# NOTE: Authorization helpers moved to utils/permissions.py
+# Use dependency injection: current_user: User = Depends(require_admin)
 # ============================================================
-
-def check_admin_or_werkvoorbereider(current_user: User):
-    """Check if user has admin or werkvoorbereider role"""
-    user_roles = [role.role for role in current_user.roles]
-    if 'admin' not in user_roles and 'werkvoorbereider' not in user_roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Alleen admin en werkvoorbereider hebben toegang"
-        )
-
-
-def check_admin(current_user: User):
-    """Check if user has admin role"""
-    user_roles = [role.role for role in current_user.roles]
-    if 'admin' not in user_roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Alleen admin heeft toegang"
-        )
 
 
 # ============================================================
@@ -90,23 +73,35 @@ async def get_materials(
     current_user: User = Depends(get_current_user)
 ):
     """Get materials with optional filters"""
-    query = db.query(Material)
-    
+    # PERFORMANCE OPTIMIZATION: Use single query with LEFT JOIN instead of N+1 queries
+    # This prevents running a separate COUNT query for each material
+    # Example: 50 materials = 1 query instead of 51 queries (1 + 50)
+    from sqlalchemy import func
+
+    query = db.query(
+        Material,
+        func.coalesce(func.count(Plate.id), 0).label('plate_count')
+    ).outerjoin(Plate, Material.plaatcode_prefix == Plate.material_prefix)
+
+    # Apply filters before grouping
     if materiaalgroep:
         query = query.filter(Material.materiaalgroep == materiaalgroep)
     if specificatie:
         query = query.filter(Material.specificatie == specificatie)
     if oppervlaktebewerking:
         query = query.filter(Material.oppervlaktebewerking == oppervlaktebewerking)
-    
-    materials = query.order_by(Material.plaatcode_prefix).all()
-    
-    # Add plate count to each material
-    for material in materials:
-        material.plate_count = db.query(Plate).filter(
-            Plate.material_prefix == material.plaatcode_prefix
-        ).count()
-    
+
+    # Group by all Material columns to get counts per material
+    query = query.group_by(Material.id)
+
+    # Execute query and build response
+    results = query.order_by(Material.plaatcode_prefix).all()
+
+    materials = []
+    for material, plate_count in results:
+        material.plate_count = plate_count
+        materials.append(material)
+
     return materials
 
 
@@ -114,34 +109,32 @@ async def get_materials(
 async def create_material(
     material: MaterialCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     """Create new material (admin only)"""
-    check_admin(current_user)
-    
-    # Validate prefix is unique
-    if not PlateStockService.validate_prefix_unique(db, material.plaatcode_prefix):
+    from services.exceptions import MaterialPrefixNotUniqueException
+
+    try:
+        db_material = PlateStockService.create_material(
+            db=db,
+            user_id=current_user.id,
+            plaatcode_prefix=material.plaatcode_prefix,
+            materiaalgroep=material.materiaalgroep,
+            specificatie=material.specificatie,
+            oppervlaktebewerking=material.oppervlaktebewerking,
+            kleur=material.kleur
+        )
+
+        # Add plate count
+        db_material.plate_count = 0
+
+        return db_material
+
+    except MaterialPrefixNotUniqueException as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Prefix {material.plaatcode_prefix} is al in gebruik"
+            detail=str(e.message)
         )
-    
-    db_material = Material(
-        plaatcode_prefix=material.plaatcode_prefix,
-        materiaalgroep=material.materiaalgroep,
-        specificatie=material.specificatie,
-        oppervlaktebewerking=material.oppervlaktebewerking,
-        kleur=material.kleur,
-        created_by=current_user.id
-    )
-    db.add(db_material)
-    db.commit()
-    db.refresh(db_material)
-    
-    # Add plate count
-    db_material.plate_count = 0
-    
-    return db_material
 
 
 @router.put("/materials/{material_id}", response_model=MaterialResponse)
@@ -149,59 +142,59 @@ async def update_material(
     material_id: str,
     material: MaterialUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     """Update material (admin only)"""
-    check_admin(current_user)
-    
-    db_material = db.query(Material).filter(Material.id == material_id).first()
-    if not db_material:
+    from services.exceptions import MaterialNotFoundError
+    from sqlalchemy import func
+
+    try:
+        update_data = material.model_dump(exclude_unset=True)
+        db_material = PlateStockService.update_material(
+            db=db,
+            user_id=current_user.id,
+            material_id=material_id,
+            update_data=update_data
+        )
+
+        # PERFORMANCE OPTIMIZATION: Use aggregate query instead of separate count query
+        plate_count = db.query(func.count(Plate.id)).filter(
+            Plate.material_prefix == db_material.plaatcode_prefix
+        ).scalar() or 0
+
+        db_material.plate_count = plate_count
+
+        return db_material
+
+    except MaterialNotFoundError:
         raise HTTPException(status_code=404, detail="Materiaal niet gevonden")
-    
-    # Update fields (prefix is NOT editable if plates exist)
-    update_data = material.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_material, key, value)
-    
-    db.commit()
-    db.refresh(db_material)
-    
-    # Add plate count
-    db_material.plate_count = db.query(Plate).filter(
-        Plate.material_prefix == db_material.plaatcode_prefix
-    ).count()
-    
-    return db_material
 
 
 @router.delete("/materials/{material_id}")
 async def delete_material(
     material_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     """Delete material (admin only)"""
-    check_admin(current_user)
-    
-    db_material = db.query(Material).filter(Material.id == material_id).first()
-    if not db_material:
+    from services.exceptions import MaterialNotFoundError, MaterialHasPlatesException
+
+    try:
+        PlateStockService.delete_material(
+            db=db,
+            user_id=current_user.id,
+            material_id=material_id
+        )
+
+        return {"success": True}
+
+    except MaterialNotFoundError:
         raise HTTPException(status_code=404, detail="Materiaal niet gevonden")
-    
-    # Check if any plates use this material
-    plate_count = db.query(Plate).filter(
-        Plate.material_prefix == db_material.plaatcode_prefix
-    ).count()
-    
-    if plate_count > 0:
+    except MaterialHasPlatesException as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Kan materiaal niet verwijderen: {plate_count} platen gebruiken dit materiaal"
+            detail=str(e.message)
         )
-    
-    db.delete(db_material)
-    db.commit()
-    
-    return {"success": True}
 
 
 # PLATE ENDPOINTS
@@ -272,24 +265,15 @@ async def create_plates(
     plate_data: PlateCreate,
     aantal: int = Query(1, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin_or_werkvoorbereider)
 ):
     """Create one or more plates (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    from services.exceptions import MaterialNotFoundError, PlateNumberGenerationException
 
-    # Verify material exists
-    material = db.query(Material).filter(Material.plaatcode_prefix == plate_data.material_prefix).first()
-    if not material:
-        raise HTTPException(status_code=404, detail=f"Materiaal '{plate_data.material_prefix}' niet gevonden")
-
-    created_plates = []
-
-    for i in range(aantal):
-        # Generate plate number
-        plate_number = PlateStockService.generate_plate_number(db, plate_data.material_prefix)
-
-        db_plate = Plate(
-            plate_number=plate_number,
+    try:
+        created_plates = PlateStockService.create_plates(
+            db=db,
+            user_id=current_user.id,
             material_prefix=plate_data.material_prefix,
             quality=plate_data.quality,
             thickness=plate_data.thickness,
@@ -299,21 +283,22 @@ async def create_plates(
             location=plate_data.location,
             notes=plate_data.notes,
             barcode=plate_data.barcode,
-            status='beschikbaar',
-            created_by=current_user.id
+            heatnummer=plate_data.heatnummer if hasattr(plate_data, 'heatnummer') else None,
+            aantal=aantal
         )
 
-        db.add(db_plate)
-        db.flush()  # Get ID without committing
-        created_plates.append(db_plate)
+        return created_plates
 
-    db.commit()
-
-    # Refresh all plates
-    for plate in created_plates:
-        db.refresh(plate)
-
-    return created_plates
+    except MaterialNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Materiaal '{plate_data.material_prefix}' niet gevonden"
+        )
+    except PlateNumberGenerationException as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e.message)
+        )
 
 
 @router.put("/plates/{plate_id}", response_model=PlateResponse)
@@ -321,76 +306,75 @@ async def update_plate(
     plate_id: str,
     plate_data: PlateUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin_or_werkvoorbereider)
 ):
     """Update plate (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    from services.exceptions import PlateNotFoundError
 
-    db_plate = db.query(Plate).filter(Plate.id == plate_id).first()
-    if not db_plate:
+    try:
+        update_data = plate_data.dict(exclude_unset=True)
+        db_plate = PlateStockService.update_plate(
+            db=db,
+            user_id=current_user.id,
+            plate_id=plate_id,
+            update_data=update_data
+        )
+
+        return db_plate
+
+    except PlateNotFoundError:
         raise HTTPException(status_code=404, detail="Plaat niet gevonden")
-
-    # Update fields
-    update_data = plate_data.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(db_plate, field, value)
-
-    db.commit()
-    db.refresh(db_plate)
-
-    return db_plate
 
 
 @router.delete("/plates/{plate_id}")
 async def delete_plate(
     plate_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     """Delete plate (admin only)"""
-    check_admin(current_user)
+    from services.exceptions import PlateNotFoundError, PlateHasActiveClaimsException
 
-    db_plate = db.query(Plate).filter(Plate.id == plate_id).first()
-    if not db_plate:
-        raise HTTPException(status_code=404, detail="Plaat niet gevonden")
-
-    # Check for active claims
-    active_claims = db.query(Claim).filter(
-        and_(Claim.plate_id == plate_id, Claim.actief == True)
-    ).count()
-
-    if active_claims > 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Kan plaat niet verwijderen: {active_claims} actieve claims"
+    try:
+        PlateStockService.delete_plate(
+            db=db,
+            user_id=current_user.id,
+            plate_id=plate_id
         )
 
-    db.delete(db_plate)
-    db.commit()
+        return {"success": True, "message": "Plaat verwijderd"}
 
-    return {"success": True, "message": "Plaat verwijderd"}
+    except PlateNotFoundError:
+        raise HTTPException(status_code=404, detail="Plaat niet gevonden")
+    except PlateHasActiveClaimsException as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e.message)
+        )
 
 
 @router.post("/plates/{plate_id}/naar-laser", response_model=PlateResponse)
 async def move_plate_to_laser(
     plate_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_werkplaats_access)
 ):
-    """Move plate to laser station (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    """Move plate to laser station (admin, werkvoorbereider, werkplaats)"""
+    from services.exceptions import PlateNotFoundError, PlateAlreadyConsumedException
 
-    db_plate = db.query(Plate).filter(Plate.id == plate_id).first()
-    if not db_plate:
+    try:
+        db_plate = PlateStockService.move_plate_to_laser(
+            db=db,
+            user_id=current_user.id,
+            plate_id=plate_id
+        )
+
+        return db_plate
+
+    except PlateNotFoundError:
         raise HTTPException(status_code=404, detail="Plaat niet gevonden")
-
-    if db_plate.is_consumed:
+    except PlateAlreadyConsumedException:
         raise HTTPException(status_code=400, detail="Plaat is al geconsumeerd")
-
-    PlateStockService.move_plate_to_laser(db, db_plate)
-
-    db.refresh(db_plate)
-    return db_plate
 
 
 @router.post("/plates/{plate_id}/van-laser", response_model=PlateResponse)
@@ -398,44 +382,90 @@ async def move_plate_from_laser(
     plate_id: str,
     request: VanLaserRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_werkplaats_access)
 ):
-    """Return plate from laser (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    """Return plate from laser (admin, werkvoorbereider, werkplaats)"""
+    from services.exceptions import PlateNotFoundError, PlateNotAtLaserException
 
-    db_plate = db.query(Plate).filter(Plate.id == plate_id).first()
-    if not db_plate:
+    try:
+        db_plate = PlateStockService.move_plate_from_laser(
+            db=db,
+            user_id=current_user.id,
+            plate_id=plate_id,
+            new_location=request.new_location
+        )
+
+        return db_plate
+
+    except PlateNotFoundError:
         raise HTTPException(status_code=404, detail="Plaat niet gevonden")
-
-    if db_plate.status != 'bij_laser':
+    except PlateNotAtLaserException:
         raise HTTPException(status_code=400, detail="Plaat staat niet bij laser")
 
-    PlateStockService.move_plate_from_laser(db, db_plate, request.new_location)
 
-    db.refresh(db_plate)
-    return db_plate
+@router.post("/plates/{plate_id}/process-remnant", response_model=RemnantResponse)
+async def process_remnant(
+    plate_id: str,
+    request: RemnantRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_werkplaats_access)
+):
+    """Process remnant from laser-cut plate (admin, werkvoorbereider, werkplaats)"""
+    from services.exceptions import (
+        PlateNotFoundError,
+        PlateNotAtLaserException,
+        PlateAlreadyConsumedException,
+        InvalidRemnantDimensionsException
+    )
+
+    try:
+        result = PlateStockService.process_remnant(
+            db=db,
+            user_id=current_user.id,
+            original_plate_id=plate_id,
+            new_width=request.new_width,
+            new_length=request.new_length,
+            new_location=request.new_location,
+            notes=request.notes
+        )
+
+        return RemnantResponse(
+            original_plate=result["original_plate"],
+            remnant_plate=result["remnant_plate"]
+        )
+
+    except PlateNotFoundError:
+        raise HTTPException(status_code=404, detail="Plaat niet gevonden")
+    except PlateNotAtLaserException:
+        raise HTTPException(status_code=400, detail="Plaat staat niet bij laser")
+    except PlateAlreadyConsumedException:
+        raise HTTPException(status_code=400, detail="Plaat is al geconsumeerd")
+    except InvalidRemnantDimensionsException as e:
+        raise HTTPException(status_code=400, detail=str(e.message))
 
 
 @router.post("/plates/{plate_id}/consume", response_model=PlateResponse)
 async def consume_plate(
     plate_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin_or_werkvoorbereider)
 ):
     """Mark plate as consumed (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    from services.exceptions import PlateNotFoundError, PlateAlreadyConsumedException
 
-    db_plate = db.query(Plate).filter(Plate.id == plate_id).first()
-    if not db_plate:
+    try:
+        db_plate = PlateStockService.consume_plate(
+            db=db,
+            user_id=current_user.id,
+            plate_id=plate_id
+        )
+
+        return db_plate
+
+    except PlateNotFoundError:
         raise HTTPException(status_code=404, detail="Plaat niet gevonden")
-
-    if db_plate.is_consumed:
+    except PlateAlreadyConsumedException:
         raise HTTPException(status_code=400, detail="Plaat is al geconsumeerd")
-
-    PlateStockService.consume_plate(db, db_plate, str(current_user.id))
-
-    db.refresh(db_plate)
-    return db_plate
 
 
 # ============================================================
@@ -473,83 +503,51 @@ async def get_claims(
 async def create_claim(
     claim_data: ClaimCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin_or_werkvoorbereider)
 ):
     """Create claim on plate (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    from services.exceptions import PlateNotFoundError, ClaimOnConsumedPlateException
 
-    # Verify plate exists
-    plate = db.query(Plate).filter(Plate.id == claim_data.plate_id).first()
-    if not plate:
+    try:
+        db_claim = PlateStockService.create_claim(
+            db=db,
+            user_id=current_user.id,
+            plate_id=claim_data.plate_id,
+            project_naam=claim_data.project_naam,
+            project_fase=claim_data.project_fase,
+            m2_geclaimd=claim_data.m2_geclaimd,
+            notes=claim_data.notes
+        )
+
+        return db_claim
+
+    except PlateNotFoundError:
         raise HTTPException(status_code=404, detail="Plaat niet gevonden")
-
-    if plate.is_consumed:
+    except ClaimOnConsumedPlateException:
         raise HTTPException(status_code=400, detail="Kan geen claim maken op geconsumeerde plaat")
-
-    # Create claim
-    db_claim = Claim(
-        plate_id=claim_data.plate_id,
-        project_naam=claim_data.project_naam,
-        project_fase=claim_data.project_fase,
-        m2_geclaimd=claim_data.m2_geclaimd,
-        notes=claim_data.notes,
-        actief=True,
-        claimed_by=current_user.id
-    )
-
-    db.add(db_claim)
-    db.commit()
-
-    # Update plate status
-    PlateStockService.update_plate_status(db, plate)
-
-    db.refresh(db_claim)
-    return db_claim
 
 
 @router.post("/claims/bulk", response_model=BulkClaimResponse)
 async def create_bulk_claims(
     bulk_data: ClaimBulkCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin_or_werkvoorbereider)
 ):
     """Bulk claim multiple plates (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    created_claims = PlateStockService.create_bulk_claims(
+        db=db,
+        user_id=current_user.id,
+        plate_ids=bulk_data.plate_ids,
+        project_naam=bulk_data.project_naam,
+        project_fase=bulk_data.project_fase
+    )
 
-    created_claims = []
+    # Calculate total m²
     total_m2 = 0
-
-    for plate_id in bulk_data.plate_ids:
-        # Verify plate exists
-        plate = db.query(Plate).filter(Plate.id == plate_id).first()
-        if not plate or plate.is_consumed:
-            continue
-
-        # Create claim
-        db_claim = Claim(
-            plate_id=plate_id,
-            project_naam=bulk_data.project_naam,
-            project_fase=bulk_data.project_fase,
-            actief=True,
-            claimed_by=current_user.id
-        )
-
-        db.add(db_claim)
-        db.flush()
-
-        created_claims.append(db_claim)
-
-        # Calculate m²
-        total_m2 += float(PlateStockService.calculate_plate_area(plate))
-
-        # Update plate status
-        PlateStockService.update_plate_status(db, plate)
-
-    db.commit()
-
-    # Refresh claims
     for claim in created_claims:
-        db.refresh(claim)
+        plate = db.query(Plate).filter(Plate.id == claim.plate_id).first()
+        if plate:
+            total_m2 += float(PlateStockService.calculate_plate_area(plate))
 
     return BulkClaimResponse(
         claims=created_claims,
@@ -562,87 +560,65 @@ async def update_claim(
     claim_id: str,
     claim_data: ClaimUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin_or_werkvoorbereider)
 ):
     """Update claim (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    from services.exceptions import ClaimNotFoundError
 
-    db_claim = db.query(Claim).filter(Claim.id == claim_id).first()
-    if not db_claim:
+    try:
+        update_data = claim_data.dict(exclude_unset=True)
+        db_claim = PlateStockService.update_claim(
+            db=db,
+            user_id=current_user.id,
+            claim_id=claim_id,
+            update_data=update_data
+        )
+
+        return db_claim
+
+    except ClaimNotFoundError:
         raise HTTPException(status_code=404, detail="Claim niet gevonden")
-
-    # Update fields
-    update_data = claim_data.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(db_claim, field, value)
-
-    db.commit()
-    db.refresh(db_claim)
-
-    return db_claim
 
 
 @router.delete("/claims/{claim_id}")
 async def release_claim(
     claim_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin_or_werkvoorbereider)
 ):
     """Release claim (sets actief=false) (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
+    from services.exceptions import ClaimNotFoundError
 
-    db_claim = db.query(Claim).filter(Claim.id == claim_id).first()
-    if not db_claim:
+    try:
+        PlateStockService.release_claim(
+            db=db,
+            user_id=current_user.id,
+            claim_id=claim_id
+        )
+
+        return {"success": True, "message": "Claim vrijgegeven"}
+
+    except ClaimNotFoundError:
         raise HTTPException(status_code=404, detail="Claim niet gevonden")
-
-    db_claim.actief = False
-    db.commit()
-
-    # Update plate status
-    plate = db.query(Plate).filter(Plate.id == db_claim.plate_id).first()
-    if plate:
-        PlateStockService.update_plate_status(db, plate)
-
-    return {"success": True, "message": "Claim vrijgegeven"}
 
 
 @router.post("/claims/release-by-project", response_model=ReleaseByProjectResponse)
 async def release_claims_by_project(
     request: ReleaseByProjectRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin_or_werkvoorbereider)
 ):
     """Release all claims for a project/fase (admin, werkvoorbereider)"""
-    check_admin_or_werkvoorbereider(current_user)
-
-    # Find all active claims for this project/fase
-    claims = db.query(Claim).filter(
-        and_(
-            Claim.project_naam == request.project_naam,
-            Claim.project_fase == request.project_fase,
-            Claim.actief == True
-        )
-    ).all()
-
-    plate_ids = set()
-    for claim in claims:
-        claim.actief = False
-        plate_ids.add(claim.plate_id)
-
-    db.commit()
-
-    # Update plate statuses
-    plates_freed = 0
-    for plate_id in plate_ids:
-        plate = db.query(Plate).filter(Plate.id == plate_id).first()
-        if plate:
-            PlateStockService.update_plate_status(db, plate)
-            if plate.status == 'beschikbaar':
-                plates_freed += 1
+    result = PlateStockService.release_claims_by_project(
+        db=db,
+        user_id=current_user.id,
+        project_naam=request.project_naam,
+        project_fase=request.project_fase
+    )
 
     return ReleaseByProjectResponse(
-        claims_released=len(claims),
-        plates_freed=plates_freed
+        claims_released=result["claims_released"],
+        plates_freed=result["plates_freed"]
     )
 
 

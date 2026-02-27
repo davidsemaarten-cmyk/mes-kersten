@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Backend: Python 3.11+ with FastAPI, SQLAlchemy, PostgreSQL 15+
 - Frontend: React 18 with TypeScript, Vite, TailwindCSS, shadcn/ui
 - Database: PostgreSQL with UUID primary keys and SQL migrations
-- Authentication: JWT tokens with role-based access (admin, werkvoorbereider, werkplaats)
+- Authentication: JWT tokens with role-based access (8 roles: admin, werkvoorbereider, werkplaats, logistiek, tekenaar, laser, buislaser, kantbank)
 
 ## Development Commands
 
@@ -70,6 +70,7 @@ psql -U postgres -d mes_kersten
 - `001_core_tables.sql` - Users, roles, audit logs, auth functions
 - `002_platestock_tables.sql` - Materials, plates, claims tables
 - `003_refactor_materials.sql` - Material schema updates
+- `004_expand_roles_system.sql` - Expand to 8 roles, digital signatures, enhanced audit logging
 
 ## Architecture Guidelines
 
@@ -83,7 +84,7 @@ psql -U postgres -d mes_kersten
 - `models/` - SQLAlchemy ORM models (user.py, material.py, plate.py, claim.py, user_role.py)
 - `schemas/` - Pydantic request/response schemas (user.py, platestock.py)
 - `services/` - Business logic layer (platestock.py)
-- `utils/` - Utility functions (auth.py for JWT)
+- `utils/` - Utility functions (auth.py for JWT, audit.py for audit logging)
 - `migrations/` - Migration tracking (002_make_material_prefix_nullable.py)
 
 **Critical Patterns:**
@@ -91,13 +92,107 @@ psql -U postgres -d mes_kersten
 
 2. **Service Layer**: Business logic belongs in `services/`, NOT in route handlers. Routes should be thin wrappers that call service methods.
 
-3. **Role-Based Access**: Use helper functions `check_admin()` and `check_admin_or_werkvoorbereider()` from platestock.py as patterns for authorization.
+3. **Role-Based Access**: Use helper functions `check_admin()` and `check_admin_or_werkvoorbereider()` from platestock.py as patterns for authorization. All 8 roles defined in `types/roles.ts`.
 
-4. **Database Sessions**: Always use `db: Session = Depends(get_db)` for automatic session cleanup.
+4. **Transaction Management Pattern**: **Service Layer Owns Transactions**
+   - **Service methods** call `db.commit()` on success and `db.rollback()` on exception
+   - **API endpoints** NEVER call `db.commit()` or `db.rollback()`
+   - Service methods raise **custom ServiceError exceptions** (from `services/exceptions.py`)
+   - API endpoints catch ServiceError and convert to HTTPException
+   - Example:
+     ```python
+     # Service Layer (services/platestock.py)
+     from services.exceptions import PlateNotFoundError
 
-5. **UUID Primary Keys**: All tables use UUID primary keys via PostgreSQL's gen_random_uuid().
+     @staticmethod
+     def delete_plate(db: Session, user_id: UUID, plate_id: UUID) -> None:
+         try:
+             plate = db.query(Plate).filter(Plate.id == plate_id).first()
+             if not plate:
+                 raise PlateNotFoundError(f"Plate {plate_id} not found")
 
-6. **Timestamps**: Use `created_at` and `updated_at` fields with server defaults (func.now()).
+             # Audit log before deletion
+             log_action(db, user_id, AuditAction.DELETE_PLATE,
+                       EntityType.PLATE, plate.id)
+
+             db.delete(plate)
+             db.commit()  # Service owns commit
+         except PlateNotFoundError:
+             db.rollback()
+             raise
+         except Exception as e:
+             db.rollback()
+             raise
+
+     # API Layer (api/platestock.py)
+     from services.exceptions import PlateNotFoundError
+
+     @router.delete("/plates/{plate_id}")
+     async def delete_plate(plate_id: str, db: Session = Depends(get_db),
+                           current_user: User = Depends(require_admin)):
+         try:
+             PlateStockService.delete_plate(db, current_user.id, plate_id)
+             return {"success": True}
+         except PlateNotFoundError:
+             raise HTTPException(status_code=404, detail="Plaat niet gevonden")
+     ```
+
+5. **Audit Logging**: Use `log_action()` from `utils/audit.py` to track user actions with entity references.
+   - **Transaction Safety**: Default behavior does NOT auto-commit (use `auto_commit=False`)
+   - Always call `log_action()` BEFORE committing the main transaction
+   - Use `AuditAction` and `EntityType` enums for consistency
+   - Example:
+     ```python
+     from utils.audit import log_action, AuditAction, EntityType
+
+     new_project = Project(...)
+     db.add(new_project)
+     db.flush()  # Get ID without committing
+     log_action(db, user_id, AuditAction.CREATE_PROJECT,
+                EntityType.PROJECT, new_project.id)
+     db.commit()  # Commits both atomically
+     ```
+
+6. **Database Sessions**: Always use `db: Session = Depends(get_db)` for automatic session cleanup.
+
+7. **UUID Primary Keys**: All tables use UUID primary keys via PostgreSQL's gen_random_uuid().
+
+8. **Timestamps**: Use `created_at` and `updated_at` fields with server defaults (func.now()).
+
+9. **Query Performance - Avoid N+1 Queries**: Always use JOIN queries instead of loops with queries.
+   - **Problem**: Fetching related data in loops causes N+1 queries (1 main + N related)
+   - **Solution**: Use JOIN with GROUP BY for aggregates, or joinedload() for relationships
+   - Example - Fetching materials with plate counts:
+     ```python
+     # ❌ BAD: N+1 query problem (1 + N queries)
+     materials = db.query(Material).all()  # 1 query
+     for material in materials:
+         material.plate_count = db.query(Plate).filter(
+             Plate.material_prefix == material.plaatcode_prefix
+         ).count()  # N separate queries!
+
+     # ✅ GOOD: Single query with JOIN (1-2 queries)
+     from sqlalchemy import func
+
+     query = db.query(
+         Material,
+         func.coalesce(func.count(Plate.id), 0).label('plate_count')
+     ).outerjoin(Plate, Material.plaatcode_prefix == Plate.material_prefix)
+
+     query = query.group_by(Material.id)
+     results = query.order_by(Material.plaatcode_prefix).all()
+
+     materials = []
+     for material, plate_count in results:
+         material.plate_count = plate_count
+         materials.append(material)
+     ```
+   - **Key Points:**
+     - Use `outerjoin()` (LEFT OUTER JOIN) to include records with no related data
+     - Use `func.coalesce(func.count(...), 0)` for counts with NULL handling
+     - Apply filters BEFORE `group_by()` for efficiency
+     - For relationships, use `joinedload()` or `selectinload()` to eager load
+   - See `docs/performance/query-optimization.md` for detailed examples
 
 ### Frontend Architecture
 
@@ -106,25 +201,32 @@ psql -U postgres -d mes_kersten
 - `src/App.tsx` - Router configuration, QueryClient setup, AuthProvider
 - `src/pages/` - Page components (Login, Dashboard, Voorraad, Claims, Werkplaats, Admin)
 - `src/components/` - Reusable UI components (shadcn/ui based)
-- `src/hooks/` - Custom React hooks (useAuth.tsx, usePlateStock.ts)
+- `src/hooks/` - Custom React hooks (useAuth.tsx, usePermissions.ts, usePlateStock.ts)
 - `src/lib/` - Utilities (api.ts for axios, utils.ts for helpers)
-- `src/types/` - TypeScript type definitions
+- `src/types/` - TypeScript type definitions (roles.ts with UserRole and RolePermissions, database.ts)
 
 **Critical Patterns:**
 1. **API Client**: Use the configured `api` instance from `src/lib/api.ts`. It includes:
    - Automatic Bearer token injection from localStorage
    - 401 redirect to /login
-   - Base URL configuration
 
-2. **React Query**: All API calls should use @tanstack/react-query with appropriate caching strategies (see App.tsx for QueryClient config).
+2. **Role-Based Permissions**: Use `usePermissions()` hook to check user permissions:
+   ```tsx
+   const { permissions, hasPermission } = usePermissions();
+   if (permissions.canCreateProjects) { /* render create button */ }
+   ```
+   - All 8 roles defined in `types/roles.ts`
+   - getRolePermissions() returns permission object for each role
 
-3. **Authentication**: The AuthProvider context provides authentication state. Check `hooks/useAuth.tsx` for the auth pattern.
+3. **React Query**: All API calls should use @tanstack/react-query with appropriate caching strategies (see App.tsx for QueryClient config).
 
-4. **Routing**: Uses react-router-dom v6 with future flags enabled (v7_startTransition, v7_relativeSplatPath).
+4. **Authentication**: The AuthProvider context provides authentication state. Check `hooks/useAuth.tsx` for the auth pattern.
 
-5. **UI Components**: Use shadcn/ui components from `src/components/` directory. Don't add new component libraries without good reason.
+5. **Routing**: Uses react-router-dom v6 with future flags enabled (v7_startTransition, v7_relativeSplatPath).
 
-6. **Toaster**: Global toast notifications via sonner (configured in App.tsx).
+6. **UI Components**: Use shadcn/ui components from `src/components/` directory. Don't add new component libraries without good reason.
+
+7. **Toaster**: Global toast notifications via sonner (configured in App.tsx).
 
 ### Database Design Patterns
 

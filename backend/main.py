@@ -3,23 +3,135 @@ MES Kersten - FastAPI Backend
 Main application entry point
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends, HTTPException, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from sqlalchemy.orm import Session
 import uvicorn
 import logging
 
 # Import routers
-from api import auth, platestock
+from api import auth, platestock, projects, order_types, orders, posnummers, storage_locations, laserplanner
+from database import get_db
+from config import settings
 
-# Configure logging
+# Configure logging with rotation
+import sys
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
+# Create logs directory if it doesn't exist
+logs_dir = Path("logs")
+logs_dir.mkdir(exist_ok=True)
+
+# Configure structured logging
+log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]'
+
+# Console handler
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(logging.Formatter(log_format))
+
+# File handler with rotation (10MB per file, keep 5 backups)
+file_handler = RotatingFileHandler(
+    logs_dir / "mes_kersten.log",
+    maxBytes=10 * 1024 * 1024,  # 10MB
+    backupCount=5,
+    encoding='utf-8'
+)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(logging.Formatter(log_format))
+
+# Error file handler (separate log for errors)
+error_handler = RotatingFileHandler(
+    logs_dir / "mes_kersten_errors.log",
+    maxBytes=10 * 1024 * 1024,  # 10MB
+    backupCount=5,
+    encoding='utf-8'
+)
+error_handler.setLevel(logging.ERROR)
+error_handler.setFormatter(logging.Formatter(log_format))
+
+# Configure root logger
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    handlers=[console_handler, file_handler, error_handler]
 )
+
 logger = logging.getLogger(__name__)
+logger.info("="*50)
+logger.info("MES Kersten Backend Starting...")
+logger.info("="*50)
+
+
+# ============================================================
+# SECURITY HEADERS MIDDLEWARE
+# ============================================================
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    Adds security headers to all responses
+
+    Headers added:
+    - X-Content-Type-Options: Prevents MIME type sniffing
+    - X-Frame-Options: Prevents clickjacking
+    - X-XSS-Protection: Enables XSS filter
+    - Strict-Transport-Security: Forces HTTPS (production only)
+    - Content-Security-Policy: Restricts resource loading
+    """
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        # Prevent MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+
+        # Prevent clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+
+        # Enable XSS protection
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+
+        # Force HTTPS in production (disabled in development)
+        if not request.url.hostname in ["localhost", "127.0.0.1"]:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+        # Content Security Policy - only for HTML responses
+        # In development (DEBUG=True), allow unsafe-inline/eval for Vite HMR.
+        # In production, enforce a stricter policy.
+        if response.headers.get("content-type", "").startswith("text/html"):
+            if settings.DEBUG:
+                csp = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                    "style-src 'self' 'unsafe-inline'; "
+                    "img-src 'self' data: https:; "
+                    "font-src 'self' data:;"
+                )
+            else:
+                csp = (
+                    "default-src 'self'; "
+                    "script-src 'self'; "
+                    "style-src 'self'; "
+                    "img-src 'self' data: https:; "
+                    "font-src 'self' data:; "
+                    "object-src 'none'; "
+                    "base-uri 'self';"
+                )
+            response.headers["Content-Security-Policy"] = csp
+
+        return response
+
+# Initialize rate limiter (disabled in test environment)
+limiter = Limiter(
+    key_func=get_remote_address,
+    enabled=settings.ENVIRONMENT != "test"  # Disable rate limiting in tests
+)
 
 app = FastAPI(
     title="MES Kersten API",
@@ -28,6 +140,14 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Add rate limiter to app state (only if not in test mode)
+app.state.limiter = limiter
+if settings.ENVIRONMENT != "test":
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Add security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # CORS configuration
 # TODO: Update CORS_ORIGINS in .env for production
@@ -60,10 +180,34 @@ async def root():
     }
 
 @app.get("/health")
-async def health_check():
+async def health_check(db: Session = Depends(get_db)):
+    """
+    Health check endpoint with actual database connectivity test
+
+    Returns:
+        Status information including database connectivity
+
+    Raises:
+        HTTPException: 503 if database is unavailable
+    """
+    from sqlalchemy import text
+    from datetime import datetime
+
+    try:
+        # Test database connection with simple query
+        db.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database unavailable"
+        )
+
     return {
         "status": "healthy",
-        "database": "connected"  # TODO: Add actual DB check
+        "database": db_status,
+        "timestamp": datetime.utcnow().isoformat()
     }
 
 # Exception handlers - MUST BE REGISTERED BEFORE ROUTERS
@@ -123,8 +267,12 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include routers - AFTER EXCEPTION HANDLERS
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(platestock.router, prefix="/api/platestock", tags=["PlateStock"])
-# app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
-# ... more routers
+app.include_router(projects.router, prefix="/api", tags=["Projects"])
+app.include_router(storage_locations.router, prefix="/api/storage-locations", tags=["Storage Locations"])
+app.include_router(order_types.router, prefix="/api/order-types", tags=["Order Types"])
+app.include_router(orders.router, prefix="/api", tags=["Orders"])
+app.include_router(posnummers.router, prefix="/api", tags=["Posnummers"])
+app.include_router(laserplanner.router, prefix="/api/laserplanner", tags=["Laserplanner"])
 
 if __name__ == "__main__":
     print("=" * 50)
@@ -138,6 +286,6 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,  # Auto-reload on code changes
+        reload=settings.DEBUG,
         log_level="info"
     )

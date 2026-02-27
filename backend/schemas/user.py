@@ -29,7 +29,10 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     """Schema for user response (without password)"""
     id: UUID
+    role: str  # Primary role from user_roles table
     is_active: bool
+    digital_signature_url: Optional[str] = None
+    signature_uploaded_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
