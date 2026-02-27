@@ -11,7 +11,7 @@ from database import get_db
 from models.order_type import OrderType
 from schemas.order_type import OrderTypeResponse
 
-router = APIRouter(prefix="/api/order-types", tags=["Order Types"])
+router = APIRouter()
 
 
 @router.get("", response_model=List[OrderTypeResponse])

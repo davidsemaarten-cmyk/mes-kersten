@@ -2,7 +2,21 @@
 CSRF Protection for MES Kersten
 Implements Double-Submit Cookie pattern with HMAC-signed tokens
 
-Security Pattern:
+Current CSRF protection is provided by:
+- SameSite=lax on the access_token cookie (blocks cross-origin POST/PUT/DELETE)
+- Strict CORS configuration (only known localhost origins allowed in development)
+
+This module implements the Double-Submit Cookie pattern as an additional layer
+of CSRF protection. To activate it, add `validate_csrf` as a dependency on
+state-changing routes, and update the frontend to:
+  1. Call GET /api/auth/csrf-token after login to receive a csrf_token cookie
+  2. Read the csrf_token cookie value (it is NOT httpOnly)
+  3. Send it in the X-CSRF-Token header on all POST/PUT/DELETE/PATCH requests
+
+TODO: Wire up validate_csrf once the frontend sends X-CSRF-Token headers.
+      Until then, SameSite=lax + CORS provides the primary CSRF mitigation.
+
+Security Pattern (when activated):
 1. Server generates CSRF token and signs it with secret key
 2. Token sent in both cookie (csrf_token) and response header (X-CSRF-Token)
 3. Client must send token in X-CSRF-Token header for state-changing requests

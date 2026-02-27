@@ -23,7 +23,7 @@ from schemas.posnummer import PosnummerCreate, PosnummerUpdate, PosnummerRespons
 router = APIRouter(tags=["Posnummers"])
 
 
-@router.get("/api/fases/{fase_id}/posnummers", response_model=List[PosnummerResponse])
+@router.get("/fases/{fase_id}/posnummers", response_model=List[PosnummerResponse])
 def list_posnummers(
     fase_id: UUID,
     materiaal: Optional[str] = None,
@@ -53,7 +53,7 @@ def list_posnummers(
     return posnummers
 
 
-@router.post("/api/fases/{fase_id}/posnummers", response_model=PosnummerResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/fases/{fase_id}/posnummers", response_model=PosnummerResponse, status_code=status.HTTP_201_CREATED)
 def create_posnummer(
     fase_id: UUID,
     data: PosnummerCreate,
@@ -104,7 +104,7 @@ def create_posnummer(
         )
 
 
-@router.put("/api/posnummers/{posnummer_id}", response_model=PosnummerResponse)
+@router.put("/posnummers/{posnummer_id}", response_model=PosnummerResponse)
 def update_posnummer(
     posnummer_id: UUID,
     data: PosnummerUpdate,
@@ -141,7 +141,7 @@ def update_posnummer(
         )
 
 
-@router.delete("/api/posnummers/{posnummer_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/posnummers/{posnummer_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_posnummer(
     posnummer_id: UUID,
     db: Session = Depends(get_db),

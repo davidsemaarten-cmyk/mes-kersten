@@ -19,7 +19,7 @@ from schemas.storage_location import (
 from utils.auth import get_current_user
 from utils.permissions import require_admin
 
-router = APIRouter(prefix="/api/storage-locations", tags=["storage-locations"])
+router = APIRouter()
 
 
 @router.get("/", response_model=List[StorageLocationResponse])

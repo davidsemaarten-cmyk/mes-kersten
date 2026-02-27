@@ -198,7 +198,7 @@ class PlateStockService:
         try:
             material = db.query(Material).filter(Material.id == material_id).first()
             if not material:
-                raise MaterialNotFoundError(material_id=str(material_id))
+                raise MaterialNotFoundError(f"Materiaal {material_id} niet gevonden")
 
             # Apply updates
             for key, value in update_data.items():
@@ -249,7 +249,7 @@ class PlateStockService:
         try:
             material = db.query(Material).filter(Material.id == material_id).first()
             if not material:
-                raise MaterialNotFoundError(material_id=str(material_id))
+                raise MaterialNotFoundError(f"Materiaal {material_id} niet gevonden")
 
             # Check if any plates use this material
             plate_count = db.query(Plate).filter(
@@ -258,9 +258,7 @@ class PlateStockService:
 
             if plate_count > 0:
                 raise MaterialHasPlatesException(
-                    material_id=str(material_id),
-                    prefix=material.plaatcode_prefix,
-                    plate_count=plate_count
+                    f"Kan materiaal niet verwijderen: {plate_count} platen gebruiken prefix '{material.plaatcode_prefix}'"
                 )
 
             # Audit log before deletion
@@ -453,7 +451,7 @@ class PlateStockService:
                 Material.plaatcode_prefix == material_prefix
             ).first()
             if not material:
-                raise MaterialNotFoundError(prefix=material_prefix)
+                raise MaterialNotFoundError(f"Materiaal met prefix '{material_prefix}' niet gevonden")
 
             created_plates = []
 

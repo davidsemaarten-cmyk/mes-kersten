@@ -17,8 +17,9 @@ import uvicorn
 import logging
 
 # Import routers
-from api import auth, platestock, projects, order_types, orders, posnummers, storage_locations
+from api import auth, platestock, projects, order_types, orders, posnummers, storage_locations, laserplanner
 from database import get_db
+from config import settings
 
 # Configure logging with rotation
 import sys
@@ -101,19 +102,36 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         # Content Security Policy - only for HTML responses
+        # In development (DEBUG=True), allow unsafe-inline/eval for Vite HMR.
+        # In production, enforce a stricter policy.
         if response.headers.get("content-type", "").startswith("text/html"):
-            response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-                "style-src 'self' 'unsafe-inline'; "
-                "img-src 'self' data: https:; "
-                "font-src 'self' data:;"
-            )
+            if settings.DEBUG:
+                csp = (
+                    "default-src 'self'; "
+                    "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                    "style-src 'self' 'unsafe-inline'; "
+                    "img-src 'self' data: https:; "
+                    "font-src 'self' data:;"
+                )
+            else:
+                csp = (
+                    "default-src 'self'; "
+                    "script-src 'self'; "
+                    "style-src 'self'; "
+                    "img-src 'self' data: https:; "
+                    "font-src 'self' data:; "
+                    "object-src 'none'; "
+                    "base-uri 'self';"
+                )
+            response.headers["Content-Security-Policy"] = csp
 
         return response
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Initialize rate limiter (disabled in test environment)
+limiter = Limiter(
+    key_func=get_remote_address,
+    enabled=settings.ENVIRONMENT != "test"  # Disable rate limiting in tests
+)
 
 app = FastAPI(
     title="MES Kersten API",
@@ -123,9 +141,10 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Add rate limiter to app state
+# Add rate limiter to app state (only if not in test mode)
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+if settings.ENVIRONMENT != "test":
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
@@ -249,10 +268,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(platestock.router, prefix="/api/platestock", tags=["PlateStock"])
 app.include_router(projects.router, prefix="/api", tags=["Projects"])
-app.include_router(storage_locations.router)  # Already has prefix in router definition
-app.include_router(order_types.router)
-app.include_router(orders.router)
-app.include_router(posnummers.router)
+app.include_router(storage_locations.router, prefix="/api/storage-locations", tags=["Storage Locations"])
+app.include_router(order_types.router, prefix="/api/order-types", tags=["Order Types"])
+app.include_router(orders.router, prefix="/api", tags=["Orders"])
+app.include_router(posnummers.router, prefix="/api", tags=["Posnummers"])
+app.include_router(laserplanner.router, prefix="/api/laserplanner", tags=["Laserplanner"])
 
 if __name__ == "__main__":
     print("=" * 50)
@@ -266,6 +286,6 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=False,  # Auto-reload disabled (causes restart loop with logging)
+        reload=settings.DEBUG,
         log_level="info"
     )

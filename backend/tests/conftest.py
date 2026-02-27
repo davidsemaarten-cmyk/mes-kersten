@@ -15,7 +15,7 @@ import uuid
 # Set test environment before imports
 os.environ["ENVIRONMENT"] = "test"
 os.environ["DEBUG"] = "True"
-os.environ["DATABASE_URL"] = "postgresql://postgres:root@localhost:5432/mes_kersten_test"
+os.environ["DATABASE_URL"] = "postgresql://postgres:7629bh5t@localhost:5432/mes_kersten_test"
 os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-min-32-chars-long-secure"
 
 from database import Base, get_db
@@ -29,7 +29,7 @@ from utils.auth import get_password_hash
 
 
 # Test database URL
-TEST_DATABASE_URL = "postgresql://postgres:root@localhost:5432/mes_kersten_test"
+TEST_DATABASE_URL = "postgresql://postgres:7629bh5t@localhost:5432/mes_kersten_test"
 
 
 @pytest.fixture(scope="session")
@@ -58,13 +58,19 @@ def test_engine():
 @pytest.fixture(scope="function")
 def test_db(test_engine) -> Generator[Session, None, None]:
     """
-    Create test database session with automatic rollback
+    Create test database session with automatic rollback using SAVEPOINTs.
 
-    Each test gets a clean database state via transaction rollback.
-    This is faster than recreating tables for each test.
+    Each test gets a clean database state. The outer transaction is never
+    committed — it is always rolled back at the end of the test.
+
+    Service methods call db.commit(), which commits to a SAVEPOINT rather than
+    the real database transaction. A new SAVEPOINT is automatically opened after
+    each commit so the session remains functional throughout the test.
+
+    This pattern works correctly even when the service layer calls db.commit().
     """
     connection = test_engine.connect()
-    transaction = connection.begin()
+    outer_transaction = connection.begin()
 
     TestSessionLocal = sessionmaker(
         autocommit=False,
@@ -74,11 +80,21 @@ def test_db(test_engine) -> Generator[Session, None, None]:
 
     session = TestSessionLocal()
 
+    # Open initial SAVEPOINT — service commits will commit here, not to the DB
+    session.begin_nested()
+
+    @event.listens_for(session, "after_transaction_end")
+    def restart_savepoint(session, transaction):
+        # When a SAVEPOINT is committed/rolled back, open a new one
+        # so the session remains in a usable nested state
+        if transaction.nested and not transaction._parent.nested:
+            session.expire_all()
+            session.begin_nested()
+
     yield session
 
-    # Rollback transaction to clean up test data
     session.close()
-    transaction.rollback()
+    outer_transaction.rollback()
     connection.close()
 
 
@@ -209,7 +225,7 @@ def test_material(test_db: Session, admin_user: User) -> Material:
         materiaalgroep="S235",
         specificatie=None,
         oppervlaktebewerking="gestraald",
-        kleur=None,
+        kleur="grijs",
         created_by=admin_user.id
     )
     test_db.add(material)
@@ -228,7 +244,7 @@ def test_material_rvs(test_db: Session, admin_user: User) -> Material:
         materiaalgroep="RVS",
         specificatie="316",
         oppervlaktebewerking="geslepen",
-        kleur=None,
+        kleur="zilver",
         created_by=admin_user.id
     )
     test_db.add(material)
@@ -329,7 +345,7 @@ def test_claim(test_db: Session, test_plate: Plate, werkvoorbereider_user: User)
         id=uuid.uuid4(),
         plate_id=test_plate.id,
         project_naam="Project X",
-        project_fase="Productie",
+        project_fase="001",
         m2_geclaimd=Decimal("8.0"),
         notes="Test claim",
         actief=True,

@@ -32,7 +32,7 @@ router = APIRouter(tags=["Orders"])
 # ORDERREEKS ENDPOINTS
 # =====================================================
 
-@router.post("/api/orderreeksen", response_model=OrderreeksResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/orderreeksen", response_model=OrderreeksResponse, status_code=status.HTTP_201_CREATED)
 def create_orderreeks(
     data: OrderreeksCreate,
     db: Session = Depends(get_db),
@@ -78,7 +78,7 @@ def create_orderreeks(
         )
 
 
-@router.get("/api/fases/{fase_id}/orderreeksen", response_model=List[OrderreeksResponse])
+@router.get("/fases/{fase_id}/orderreeksen", response_model=List[OrderreeksResponse])
 def list_orderreeksen_for_fase(
     fase_id: UUID,
     include_inactive: bool = False,
@@ -107,7 +107,7 @@ def list_orderreeksen_for_fase(
         )
 
 
-@router.get("/api/orderreeksen/{orderreeks_id}", response_model=OrderreeksResponse)
+@router.get("/orderreeksen/{orderreeks_id}", response_model=OrderreeksResponse)
 def get_orderreeks(
     orderreeks_id: UUID,
     db: Session = Depends(get_db),
@@ -130,7 +130,7 @@ def get_orderreeks(
         )
 
 
-@router.put("/api/orderreeksen/{orderreeks_id}", response_model=OrderreeksResponse)
+@router.put("/orderreeksen/{orderreeks_id}", response_model=OrderreeksResponse)
 def update_orderreeks(
     orderreeks_id: UUID,
     data: OrderreeksUpdate,
@@ -162,7 +162,7 @@ def update_orderreeks(
         )
 
 
-@router.delete("/api/orderreeksen/{orderreeks_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/orderreeksen/{orderreeks_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_orderreeks(
     orderreeks_id: UUID,
     db: Session = Depends(get_db),
@@ -191,7 +191,7 @@ def delete_orderreeks(
 # ORDER ENDPOINTS
 # =====================================================
 
-@router.get("/api/orders", response_model=List[OrderResponse])
+@router.get("/orders", response_model=List[OrderResponse])
 def list_orders(
     status_filter: Optional[str] = None,
     assigned_to_me: bool = False,
@@ -226,7 +226,7 @@ def list_orders(
         )
 
 
-@router.get("/api/orders/{order_id}", response_model=OrderDetailResponse)
+@router.get("/orders/{order_id}", response_model=OrderDetailResponse)
 def get_order(
     order_id: UUID,
     db: Session = Depends(get_db),
@@ -249,7 +249,7 @@ def get_order(
         )
 
 
-@router.put("/api/orders/{order_id}/assign", response_model=OrderResponse)
+@router.put("/orders/{order_id}/assign", response_model=OrderResponse)
 def assign_order(
     order_id: UUID,
     data: OrderAssign,
@@ -286,7 +286,7 @@ def assign_order(
         )
 
 
-@router.post("/api/orders/{order_id}/link-posnummers", status_code=status.HTTP_201_CREATED)
+@router.post("/orders/{order_id}/link-posnummers", status_code=status.HTTP_201_CREATED)
 def link_posnummers_to_order(
     order_id: UUID,
     data: LinkPosnummersRequest,

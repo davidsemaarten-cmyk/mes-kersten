@@ -26,22 +26,16 @@ export function useColumnPreferences(view: TableView) {
         const viewPrefs = preferences[view]
 
         if (viewPrefs) {
-          const defaults = getDefaultColumns(view)
+          // Clone defaults to avoid mutating the module-level constant array
+          const defaults = getDefaultColumns(view).map(col => ({ ...col }))
 
           // Merge stored preferences with defaults
           // This handles new columns added after user saved preferences
           const columnMap = new Map(defaults.map(col => [col.id, col]))
 
           // Update visibility from stored preferences
-          viewPrefs.visibleColumns.forEach(id => {
-            const col = columnMap.get(id)
-            if (col) col.visible = true
-          })
-
           defaults.forEach(col => {
-            if (!viewPrefs.visibleColumns.includes(col.id)) {
-              col.visible = false
-            }
+            col.visible = viewPrefs.visibleColumns.includes(col.id)
           })
 
           // Reorder columns based on stored order
@@ -128,7 +122,7 @@ export function useColumnPreferences(view: TableView) {
 
   // Reset to default configuration
   const resetToDefault = useCallback(() => {
-    const defaults = getDefaultColumns(view)
+    const defaults = getDefaultColumns(view).map(col => ({ ...col }))
     setColumns(defaults)
     savePreferences(defaults)
   }, [view, savePreferences])
