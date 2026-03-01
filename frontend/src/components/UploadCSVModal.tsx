@@ -53,25 +53,30 @@ export function UploadCSVModal({ open, onClose, jobId }: UploadCSVModalProps) {
     }
   }
 
-  const handleImport = async () => {
-    if (!parsedData) return
-
-    await addLineItems.mutateAsync({
-      jobId,
-      selectedRows: Array.from(selectedRows),
-      csvMetadata: parsedData.metadata,
-      allRows: parsedData.rows
-    })
-
-    // Reset
+  const handleClose = () => {
     setFile(null)
     setParsedData(null)
     setSelectedRows(new Set())
     onClose()
   }
 
+  const handleImport = async () => {
+    if (!parsedData || !file) return
+
+    await addLineItems.mutateAsync({
+      jobId,
+      selectedRows: Array.from(selectedRows),
+      csvMetadata: parsedData.metadata,
+      allRows: parsedData.rows,
+      rawContent: parsedData.raw_content,
+      originalFilename: file.name,
+    })
+
+    handleClose()
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>CSV Uploaden</DialogTitle>
@@ -169,7 +174,7 @@ export function UploadCSVModal({ open, onClose, jobId }: UploadCSVModalProps) {
 
             {/* Actions */}
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={handleClose}>
                 Annuleren
               </Button>
               <Button

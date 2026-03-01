@@ -153,18 +153,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 # TODO: Update CORS_ORIGINS in .env for production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-        "http://localhost:5176",
-        "http://localhost:5177",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-        "http://127.0.0.1:5175",
-        "http://127.0.0.1:5176",
-        "http://127.0.0.1:5177"
-    ],  # Frontend dev server (multiple ports for flexibility)
+    allow_origins=settings.CORS_ORIGINS,  # Configured via .env / config.py
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -260,7 +249,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={
             "detail": "Internal server error",
-            "error": str(exc) if app.debug else "An unexpected error occurred"
+            "error": str(exc) if settings.DEBUG else "An unexpected error occurred"
         }
     )
 

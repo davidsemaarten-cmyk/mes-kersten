@@ -85,10 +85,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid - redirect to login
-      // Only redirect if we're not already on the login page (prevent infinite loop)
+      // Token expired or invalid — notify the auth layer via a custom event.
+      // The AuthProvider listens for this and handles client-side navigation,
+      // avoiding a full page reload which would reset the React Query cache.
       if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login'
+        window.dispatchEvent(new CustomEvent('auth:logout'))
       }
     }
     return Promise.reject(error)

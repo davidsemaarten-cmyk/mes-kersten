@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 import type { User } from '../types/database'
 
@@ -23,6 +24,19 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+
+  // Handle auth:logout events dispatched by the API interceptor on 401 responses.
+  // Using client-side navigation (navigate) avoids a full page reload and preserves
+  // the React Query cache so data re-fetches cleanly after the user logs back in.
+  useEffect(() => {
+    const handleAuthLogout = () => {
+      setUser(null)
+      navigate('/login', { replace: true })
+    }
+    window.addEventListener('auth:logout', handleAuthLogout)
+    return () => window.removeEventListener('auth:logout', handleAuthLogout)
+  }, [navigate])
 
   // Check for existing session on mount by calling /api/auth/me
   useEffect(() => {

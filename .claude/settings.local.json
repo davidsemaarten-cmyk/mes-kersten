@@ -73,7 +73,19 @@
       "Bash(python main.py:*)",
       "Bash(./venv/Scripts/python.exe:*)",
       "Bash(netstat:*)",
-      "Skill(llm-application-dev:prompt-engineering-patterns)"
+      "Skill(llm-application-dev:prompt-engineering-patterns)",
+      "Bash(git:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(\"C:/Program Files/nodejs/npm.cmd\" install dxf-viewer)",
+      "Bash(\"C:/Program Files/nodejs/npm.cmd\" list dxf-viewer)",
+      "Bash(\"C:/Program Files/nodejs/npm.cmd\" install dxf-viewer --save)",
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:cadview.wiscaksono.com)",
+      "Bash(npm uninstall dxf-viewer)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(gh pr list)"
     ],
     "deny": [],
     "ask": []

@@ -133,6 +133,11 @@ class LaserLineItemNotFoundError(ServiceError):
     pass
 
 
+class LaserDXFFileNotFoundError(ServiceError):
+    """Raised when a laser DXF file record is not found"""
+    pass
+
+
 # =====================================================
 # Future Module Exceptions (Phase 1.2+)
 # =====================================================

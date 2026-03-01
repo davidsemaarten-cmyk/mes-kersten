@@ -27,6 +27,7 @@ class LineItemCreate(LineItemBase):
 class LineItemResponse(LineItemBase):
     id: UUID
     laser_job_id: UUID
+    csv_import_id: Optional[UUID] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -76,15 +77,94 @@ class JobWithLineItems(JobResponse):
     model_config = ConfigDict(from_attributes=True)
 
 # ============================================================
+# CSV IMPORT SCHEMAS
+# ============================================================
+
+class CSVImportResponse(BaseModel):
+    """Summary of a CSV import — without raw_content (for listing)"""
+    id: UUID
+    laser_job_id: UUID
+    original_filename: str
+    csv_metadata: Optional[Dict[str, Any]] = None
+    uploaded_by: Optional[UUID] = None
+    uploaded_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class CSVImportDetailResponse(CSVImportResponse):
+    """Full CSV import record including the raw file content"""
+    raw_content: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+# ============================================================
 # CSV UPLOAD SCHEMAS
 # ============================================================
 
 class CSVUploadResponse(BaseModel):
-    """Response after CSV parsing"""
-    metadata: Dict[str, str]  # First 4 rows
-    headers: List[str]  # Row 5
+    """Response after CSV parsing — includes raw_content so the frontend
+    can forward it to the line-items endpoint without re-reading the file."""
+    metadata: Dict[str, str]   # First 4 rows
+    headers: List[str]          # Row 5
     rows: List[Dict[str, Any]]  # Row 6+ with row_number
+    raw_content: str             # Original file text, preserved verbatim
 
 class LineItemSelection(BaseModel):
     """User's selection of which rows to import"""
-    selected_row_numbers: List[int]  # List of row_number values to import
+    selected_row_numbers: List[int]
+
+# ============================================================
+# DXF FILE SCHEMAS
+# ============================================================
+
+class DXFFileResponse(BaseModel):
+    """DXF file record — thumbnail included, raw file_content excluded."""
+    id: UUID
+    laser_job_id: UUID
+    csv_import_id: Optional[UUID] = None
+    line_item_id: Optional[UUID] = None
+    original_filename: str
+    posnr_key: str
+    thumbnail_svg: Optional[str] = None
+    uploaded_by: Optional[UUID] = None
+    uploaded_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class DXFFileDetailResponse(DXFFileResponse):
+    """DXF file record including the raw DXF text (used by the viewer)."""
+    file_content: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class DXFUploadResult(BaseModel):
+    """Result of a bulk DXF upload operation."""
+    matched: List[DXFFileResponse]
+    unmatched: List[str]   # original filenames that had no matching posnr
+
+
+class SingleDXFUploadResult(BaseModel):
+    """Result of uploading a single DXF file directly linked to a line item."""
+    dxf: DXFFileResponse
+    filename_mismatch: bool  # True when stem(filename) != item.posnr (warn the user)
+
+
+# ============================================================
+# LINE ITEM SCHEMAS (edit / manual create)
+# ============================================================
+
+class LineItemUpdate(BaseModel):
+    """Partial update for an existing line item (all fields optional)."""
+    profiel: Optional[str] = None
+    kwaliteit: Optional[str] = None
+    aantal: Optional[int] = None
+    opmerkingen: Optional[str] = None
+
+
+class ManualLineItemCreate(BaseModel):
+    """Create a single line item manually (not from CSV)."""
+    posnr: Optional[str] = None
+    profiel: Optional[str] = None
+    kwaliteit: Optional[str] = None
+    aantal: Optional[int] = None
+    opmerkingen: Optional[str] = None

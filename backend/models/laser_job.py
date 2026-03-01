@@ -25,6 +25,8 @@ class LaserJob(Base):
 
     # Relationships
     line_items = relationship("LaserLineItem", back_populates="laser_job", cascade="all, delete-orphan", lazy="selectin")
+    csv_imports = relationship("LaserCSVImport", back_populates="laser_job", cascade="all, delete-orphan", lazy="selectin")
+    dxf_files = relationship("LaserDXFFile", back_populates="laser_job", cascade="all, delete-orphan", lazy="selectin")
     project = relationship("Project", foreign_keys=[project_id])
     fase = relationship("Fase", foreign_keys=[fase_id])
     creator = relationship("User", foreign_keys=[created_by])

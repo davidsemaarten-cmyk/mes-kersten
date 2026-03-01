@@ -475,6 +475,7 @@ export type LaserJobStatus = 'aangemaakt' | 'geprogrammeerd' | 'nc_verzonden' | 
 export interface LaserLineItem {
   id: string
   laser_job_id: string
+  csv_import_id: string | null
   projectcode: string | null
   fasenr: string | null
   posnr: string | null
@@ -508,6 +509,21 @@ export interface LaserJobWithLineItems extends LaserJob {
   line_items: LaserLineItem[]
 }
 
+/** Summary of a single CSV import — no raw_content (used for version list) */
+export interface LaserCSVImport {
+  id: string
+  laser_job_id: string
+  original_filename: string
+  csv_metadata: Record<string, string> | null
+  uploaded_by: string | null
+  uploaded_at: string
+}
+
+/** Full import record including the original file text (used for Tab 2) */
+export interface LaserCSVImportDetail extends LaserCSVImport {
+  raw_content: string
+}
+
 export interface CSVParseResult {
   metadata: Record<string, string>
   headers: string[]
@@ -515,4 +531,35 @@ export interface CSVParseResult {
     row_number: number
     [key: string]: any
   }>
+  raw_content: string
+}
+
+// =====================================================
+// DXF File Types
+// =====================================================
+
+export interface LaserDXFFile {
+  id: string
+  laser_job_id: string
+  csv_import_id: string | null
+  line_item_id: string | null
+  original_filename: string
+  posnr_key: string
+  thumbnail_svg: string | null
+  uploaded_by: string | null
+  uploaded_at: string
+}
+
+export interface LaserDXFFileDetail extends LaserDXFFile {
+  file_content: string
+}
+
+export interface DXFUploadResult {
+  matched: LaserDXFFile[]
+  unmatched: string[]
+}
+
+export interface SingleDXFUploadResult {
+  dxf: LaserDXFFile
+  filename_mismatch: boolean
 }

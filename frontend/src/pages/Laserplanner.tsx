@@ -1,22 +1,34 @@
 import { useState, useMemo } from 'react'
 import Layout from '../components/Layout'
-import { useLaserJobs } from '../hooks/useLaserplanner'
+import { useLaserJobs, useDeleteJob } from '../hooks/useLaserplanner'
 import { Button } from '../components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
-import { Plus, Loader2, FileText } from 'lucide-react'
-import { LaserJobStatus } from '../types/database'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog'
+import { Plus, Loader2, FileText, Trash2 } from 'lucide-react'
+import { LaserJob, LaserJobStatus } from '../types/database'
 import { CreateJobModal } from '../components/CreateJobModal'
 import { useNavigate } from 'react-router-dom'
 
 export function Laserplanner() {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [statusFilter, setStatusFilter] = useState<LaserJobStatus | 'alle'>('alle')
+  const [jobToDelete, setJobToDelete] = useState<LaserJob | null>(null)
 
   const { data: jobs, isLoading } = useLaserJobs(
     statusFilter === 'alle' ? undefined : statusFilter
   )
+  const deleteJob = useDeleteJob()
   const navigate = useNavigate()
 
   const statusCounts = useMemo(() => {
@@ -45,6 +57,13 @@ export function Laserplanner() {
       case 'gereed': return 'Gereed'
       default: return status
     }
+  }
+
+  const handleDeleteConfirm = () => {
+    if (!jobToDelete) return
+    deleteJob.mutate(jobToDelete.id, {
+      onSettled: () => setJobToDelete(null),
+    })
   }
 
   return (
@@ -99,11 +118,24 @@ export function Laserplanner() {
                 onClick={() => navigate(`/laserplanner/${job.id}`)}
               >
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg">{job.naam}</CardTitle>
-                    <Badge variant={getStatusBadgeVariant(job.status)}>
-                      {getStatusLabel(job.status)}
-                    </Badge>
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-lg leading-tight">{job.naam}</CardTitle>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge variant={getStatusBadgeVariant(job.status)}>
+                        {getStatusLabel(job.status)}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setJobToDelete(job)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   {job.beschrijving && (
                     <CardDescription>{job.beschrijving}</CardDescription>
@@ -139,6 +171,32 @@ export function Laserplanner() {
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
       />
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!jobToDelete} onOpenChange={(open) => !open && setJobToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Laserjob verwijderen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je de laserjob <strong>"{jobToDelete?.naam}"</strong> wilt verwijderen?
+              Deze actie kan niet ongedaan worden gemaakt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteConfirm}
+              disabled={deleteJob.isPending}
+            >
+              {deleteJob.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   )
 }

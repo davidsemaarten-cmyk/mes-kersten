@@ -70,6 +70,14 @@ class AuditAction(str, Enum):
     # Certificate actions (Phase 7)
     EXPORT_CERTIFICATES = "export_certificates"
 
+    # Laser planner actions
+    CREATE_LASER_JOB = "create_laser_job"
+    UPDATE_LASER_JOB = "update_laser_job"
+    DELETE_LASER_JOB = "delete_laser_job"
+    IMPORT_CSV = "import_csv"
+    UPLOAD_DXF = "upload_dxf"
+    DELETE_DXF = "delete_dxf"
+
 
 class EntityType(str, Enum):
     """
@@ -86,6 +94,7 @@ class EntityType(str, Enum):
     CLAIM = "claim"
     FILE = "file"
     CERTIFICATE = "certificate"
+    LASER_JOB = "laser_job"
 
 
 def log_action(

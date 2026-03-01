@@ -10,6 +10,7 @@ class LaserLineItem(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     laser_job_id = Column(UUID(as_uuid=True), ForeignKey("laser_jobs.id", ondelete="CASCADE"), nullable=False, index=True)
+    csv_import_id = Column(UUID(as_uuid=True), ForeignKey("laser_csv_imports.id", ondelete="CASCADE"), nullable=True, index=True)
 
     # CSV columns
     projectcode = Column(String(50), nullable=True)
@@ -28,6 +29,8 @@ class LaserLineItem(Base):
 
     # Relationships
     laser_job = relationship("LaserJob", back_populates="line_items")
+    csv_import = relationship("LaserCSVImport", back_populates="line_items")
+    dxf_files = relationship("LaserDXFFile", back_populates="line_item")
 
     def __repr__(self):
         return f"<LaserLineItem {self.posnr} - {self.profiel}>"
