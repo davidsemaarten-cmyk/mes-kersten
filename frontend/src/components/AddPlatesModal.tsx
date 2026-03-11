@@ -279,13 +279,18 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
                 id="thickness"
                 type="number"
                 step="0.1"
-                min="0"
+                min="0.1"
+                max="500"
                 value={formData.thickness || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, thickness: parseFloat(e.target.value) })
-                }
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value)
+                  setFormData({ ...formData, thickness: isNaN(val) ? 0 : Math.max(0, val) })
+                }}
                 required
               />
+              {formData.thickness < 0 && (
+                <p className="text-xs text-destructive">Dikte moet groter dan 0 zijn</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -503,7 +508,7 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
             </Button>
             <Button
               type="submit"
-              disabled={createPlates.isPending || !selectedMaterial}
+              disabled={createPlates.isPending || !selectedMaterial || formData.thickness <= 0 || formData.width <= 0 || formData.length <= 0}
             >
               {createPlates.isPending ? 'Toevoegen...' : 'Toevoegen'}
             </Button>
