@@ -77,7 +77,7 @@ export function Profile() {
                 Handtekening upload functionaliteit komt binnenkort
               </p>
               <p className="text-sm text-muted-foreground mt-2">
-                Dit wordt geïmplementeerd in Phase 0.1
+                Binnenkort beschikbaar
               </p>
             </div>
           </CardContent>

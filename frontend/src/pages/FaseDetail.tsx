@@ -94,7 +94,7 @@ export function FaseDetail() {
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold font-mono">{fase.full_code}</h1>
+            <h1 className="text-2xl font-semibold font-mono">{fase.full_code}</h1>
             {fase.beschrijving && (
               <p className="text-lg text-muted-foreground mt-1">{fase.beschrijving}</p>
             )}
@@ -178,7 +178,7 @@ export function FaseDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">0</div>
-                  <p className="text-xs text-muted-foreground">Phase 2: Bestandsupload</p>
+                  <p className="text-xs text-muted-foreground">Gekoppelde bestanden</p>
                 </CardContent>
               </Card>
 
@@ -189,7 +189,7 @@ export function FaseDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">0</div>
-                  <p className="text-xs text-muted-foreground">Phase 5: Materiaal koppeling</p>
+                  <p className="text-xs text-muted-foreground">Gekoppelde platen</p>
                 </CardContent>
               </Card>
             </div>
@@ -246,7 +246,7 @@ export function FaseDetail() {
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-lg font-medium mb-2">Bestandsbeheer</p>
                   <p className="text-muted-foreground">
-                    Bestandsupload en -beheer wordt toegevoegd in Phase 2
+                    Bestandsupload en -beheer wordt binnenkort toegevoegd
                   </p>
                 </div>
               </CardContent>
@@ -323,7 +323,7 @@ export function FaseDetail() {
                   <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-lg font-medium mb-2">Materiaal Koppeling</p>
                   <p className="text-muted-foreground">
-                    Materiaal koppeling wordt toegevoegd in Phase 5
+                    Materiaal koppeling wordt binnenkort toegevoegd
                   </p>
                 </div>
               </CardContent>
