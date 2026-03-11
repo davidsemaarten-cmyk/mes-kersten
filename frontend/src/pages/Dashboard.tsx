@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import Layout from '../components/Layout'
+import { Layout } from '../components/Layout'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import api from '../lib/api'
 
-export default function Dashboard() {
-  const [apiStatus, setApiStatus] = useState<any>(null)
+export function Dashboard() {
+  const [apiStatus, setApiStatus] = useState<{ status: string; message: string; version: string } | null>(null)
 
   useEffect(() => {
     // Fetch API status
@@ -84,11 +84,12 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Project Management - Create projects/phases</li>
-              <li>File Handling - Upload and manage files</li>
-              <li>Order Management - Track purchases and deliveries</li>
-              <li>Cutting Lists - Generate optimized zaaglijsten</li>
-              <li>Planning - Gantt charts and calendar views</li>
+              <li>Checklists - Kwaliteitscontrole en afvinklijsten</li>
+              <li>Bestandsbeheer - Upload en beheer van bestanden</li>
+              <li>Orderuitvoering - Voortgang en uitvoering van orders</li>
+              <li>Fotodocumentatie - Foto's bij projecten en orders</li>
+              <li>Certificaatexport - Exporteer materiaalcertificaten</li>
+              <li>Notificaties - Meldingen en waarschuwingen</li>
             </ul>
           </CardContent>
         </Card>
