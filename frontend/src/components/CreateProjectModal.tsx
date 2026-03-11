@@ -28,15 +28,21 @@ export function CreateProjectModal({ open, onClose }: CreateProjectModalProps) {
     naam: '',
     beschrijving: '',
   })
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
 
     // Validation
     if (!formData.code.trim()) {
       return
     }
     if (!formData.naam.trim()) {
+      return
+    }
+    if (/[<>]/.test(formData.naam)) {
+      setError('Projectnaam mag geen HTML-tekens bevatten')
       return
     }
 
@@ -63,6 +69,7 @@ export function CreateProjectModal({ open, onClose }: CreateProjectModalProps) {
   const handleClose = () => {
     if (!createProject.isPending) {
       setFormData({ code: '', naam: '', beschrijving: '' })
+      setError(null)
       onClose()
     }
   }
@@ -102,12 +109,18 @@ export function CreateProjectModal({ open, onClose }: CreateProjectModalProps) {
             <Input
               id="naam"
               value={formData.naam}
-              onChange={(e) => setFormData({ ...formData, naam: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, naam: e.target.value })
+                if (error) setError(null)
+              }}
               placeholder="bijv. Station Groningen"
               maxLength={500}
               required
               disabled={createProject.isPending}
             />
+            {error && (
+              <p className="text-sm text-red-500">{error}</p>
+            )}
           </div>
 
           <div className="space-y-2">

@@ -52,6 +52,10 @@ export function CreateOrderreeksModal({ faseId, open, onOpenChange }: CreateOrde
       toast.error('Titel is verplicht')
       return
     }
+    if (/[<>]/.test(title)) {
+      toast.error('Titel mag geen HTML-tekens bevatten')
+      return
+    }
 
     if (selectedOrderTypeIds.length === 0) {
       toast.error('Selecteer minimaal één bewerkingstype')

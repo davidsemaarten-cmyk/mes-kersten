@@ -2,7 +2,7 @@
 Pydantic schemas for Orderreeks API
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from uuid import UUID
 from datetime import datetime
 from typing import List
@@ -16,6 +16,17 @@ class OrderreeksCreate(BaseModel):
     title: str = Field(default="Volledig", description="Title of the orderreeks")
     order_type_ids: List[UUID] = Field(..., description="List of order type IDs to create orders for")
 
+    @field_validator('title')
+    @classmethod
+    def validate_title(cls, v: str) -> str:
+        """Validate title — no HTML tags allowed"""
+        v = v.strip()
+        if len(v) == 0:
+            raise ValueError('Titel mag niet leeg zijn')
+        if '<' in v or '>' in v:
+            raise ValueError('Titel mag geen HTML-tekens bevatten')
+        return v
+
 
 class OrderreeksUpdate(BaseModel):
     """
@@ -23,6 +34,18 @@ class OrderreeksUpdate(BaseModel):
     """
     title: str | None = Field(None, description="New title")
     status: str | None = Field(None, description="New status (open, in_uitvoering, afgerond)")
+
+    @field_validator('title')
+    @classmethod
+    def validate_title_update(cls, v: str | None) -> str | None:
+        """Validate title in update — no HTML tags allowed"""
+        if v is not None:
+            v = v.strip()
+            if len(v) == 0:
+                raise ValueError('Titel mag niet leeg zijn')
+            if '<' in v or '>' in v:
+                raise ValueError('Titel mag geen HTML-tekens bevatten')
+        return v
 
 
 class OrderBasicResponse(BaseModel):
@@ -36,8 +59,7 @@ class OrderBasicResponse(BaseModel):
     assigned_to_name: str | None
     posnummer_count: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderreeksResponse(BaseModel):
@@ -56,5 +78,4 @@ class OrderreeksResponse(BaseModel):
     completed_order_count: int
     progress_percentage: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

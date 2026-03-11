@@ -43,10 +43,12 @@ class ProjectBase(BaseModel):
     @field_validator('naam')
     @classmethod
     def validate_naam(cls, v: str) -> str:
-        """Validate project name"""
+        """Validate project name — no HTML tags allowed"""
         v = v.strip()
         if len(v) == 0:
             raise ValueError('Project name cannot be empty')
+        if '<' in v or '>' in v:
+            raise ValueError('Naam mag geen HTML-tekens bevatten')
         return v
 
 
@@ -67,11 +69,13 @@ class ProjectUpdate(BaseModel):
     @field_validator('naam')
     @classmethod
     def validate_naam_update(cls, v: Optional[str]) -> Optional[str]:
-        """Validate project name in update"""
+        """Validate project name in update — no HTML tags allowed"""
         if v is not None:
             v = v.strip()
             if len(v) == 0:
                 raise ValueError('Project name cannot be empty')
+            if '<' in v or '>' in v:
+                raise ValueError('Naam mag geen HTML-tekens bevatten')
         return v
 
 
