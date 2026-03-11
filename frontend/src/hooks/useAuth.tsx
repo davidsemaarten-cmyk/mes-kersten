@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 import type { User } from '../types/database'
@@ -39,7 +39,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [navigate])
 
   // Check for existing session on mount by calling /api/auth/me
+  // useRef prevents duplicate fetches caused by React StrictMode's double-mount cycle
+  const authInitialized = useRef(false)
   useEffect(() => {
+    if (authInitialized.current) return
+    authInitialized.current = true
+
     const initAuth = async () => {
       try {
         // Try to get current user from server (cookie will be sent automatically)
@@ -59,7 +64,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     initAuth()
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     try {
       const response = await api.post('/api/auth/login', { email, password })
 
@@ -73,9 +78,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       throw error
     }
-  }
+  }, [])
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       // Call logout endpoint to clear httpOnly cookie
       await api.post('/api/auth/logout')
@@ -85,10 +90,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setUser(null)
     }
-  }
+  }, [])
+
+  // Memoize context value to prevent unnecessary re-renders of consumers
+  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )

@@ -674,20 +674,26 @@ export function Voorraad() {
         </>
       )}
 
-      {/* Modals */}
-      <AddPlatesModal open={addModalOpen} onClose={() => setAddModalOpen(false)} />
-      <BulkClaimModal
-        open={bulkClaimModalOpen}
-        onClose={() => setBulkClaimModalOpen(false)}
-      />
-      <PlateDetailsModal
-        open={detailsModalOpen}
-        onClose={() => {
-          setDetailsModalOpen(false)
-          setSelectedPlate(null)
-        }}
-        plate={selectedPlate}
-      />
+      {/* Modals — only mount when open to avoid unnecessary API calls */}
+      {addModalOpen && (
+        <AddPlatesModal open={addModalOpen} onClose={() => setAddModalOpen(false)} />
+      )}
+      {bulkClaimModalOpen && (
+        <BulkClaimModal
+          open={bulkClaimModalOpen}
+          onClose={() => setBulkClaimModalOpen(false)}
+        />
+      )}
+      {detailsModalOpen && selectedPlate && (
+        <PlateDetailsModal
+          open={detailsModalOpen}
+          onClose={() => {
+            setDetailsModalOpen(false)
+            setSelectedPlate(null)
+          }}
+          plate={selectedPlate}
+        />
+      )}
       </div>
     </Layout>
   )
