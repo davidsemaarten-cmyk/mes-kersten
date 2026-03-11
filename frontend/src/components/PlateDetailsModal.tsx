@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -149,8 +149,8 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
     }
   }
 
-  const activeClaims = plate.claims.filter(c => c.actief)
-  const releasedClaims = plate.claims.filter(c => !c.actief)
+  const activeClaims = plate.claims.filter(c => c.is_active)
+  const releasedClaims = plate.claims.filter(c => !c.is_active)
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -167,6 +167,7 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
                 <DialogTitle className="text-xl font-semibold text-gray-900">
                   {plate.plate_number}
                 </DialogTitle>
+                <DialogDescription className="sr-only">Details van plaat {plate.plate_number}</DialogDescription>
                 <p className="text-sm text-gray-500 mt-1">
                   {plate.material?.naam || plate.material_prefix}
                 </p>
@@ -375,7 +376,7 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleCreateClaim} className="space-y-4">
+                  <form onSubmit={handleCreateClaim} noValidate className="space-y-4">
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="project">Project *</Label>
