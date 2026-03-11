@@ -144,6 +144,7 @@ export function AddMaterialModal({ open, onClose, material }: AddMaterialModalPr
                 oppervlaktebewerking: ''
               })}
               placeholder="Bijv. S235, RVS, Aluminium"
+              maxLength={50}
               required
             />
           </div>
@@ -159,6 +160,7 @@ export function AddMaterialModal({ open, onClose, material }: AddMaterialModalPr
                 specificatie: e.target.value || null
               })}
               placeholder="Bijv. 304, 316, 5083"
+              maxLength={50}
             />
           </div>
 
@@ -173,6 +175,7 @@ export function AddMaterialModal({ open, onClose, material }: AddMaterialModalPr
                 oppervlaktebewerking: e.target.value
               })}
               placeholder="Bijv. zwart, gestraald, geslepen"
+              maxLength={100}
               required
             />
           </div>
