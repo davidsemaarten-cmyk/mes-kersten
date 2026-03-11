@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -81,9 +81,10 @@ export function CreatePosnummerModal({ faseId, open, onOpenChange }: CreatePosnu
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Nieuw Posnummer</DialogTitle>
+          <DialogDescription>Voeg een posnummer toe aan deze fase.</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             {/* Posnummer */}
             <div className="space-y-2">

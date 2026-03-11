@@ -119,7 +119,7 @@ export function AddMaterialModal({ open, onClose, material }: AddMaterialModalPr
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           {/* Materiaalgroep */}
           <div>
             <Label htmlFor="materiaalgroep">Materiaalgroep *</Label>

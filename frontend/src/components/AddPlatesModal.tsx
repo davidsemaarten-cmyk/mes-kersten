@@ -187,7 +187,7 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           {/* Material Selection - 3 Cascading Dropdowns */}
           <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
             <h3 className="text-sm font-medium">Materiaal Selectie *</h3>

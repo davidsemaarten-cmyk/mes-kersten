@@ -245,7 +245,7 @@ export function StorageLocations() {
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <DialogHeader>
               <DialogTitle>
                 {editingLocation ? 'Locatie Bewerken' : 'Nieuwe Locatie'}

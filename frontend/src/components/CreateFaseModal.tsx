@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -89,9 +89,10 @@ export function CreateFaseModal({ open, onClose, projectId }: CreateFaseModalPro
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Nieuwe Fase</DialogTitle>
+          <DialogDescription>Voeg een fase toe aan dit project.</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="fase_nummer">

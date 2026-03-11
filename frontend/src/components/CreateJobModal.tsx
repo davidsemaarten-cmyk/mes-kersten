@@ -52,7 +52,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div className="space-y-2">
             <Label>Project *</Label>
             <ProjectPhaseCombobox

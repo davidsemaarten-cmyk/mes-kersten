@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -96,9 +96,10 @@ export function BulkClaimModal({ open, onClose }: BulkClaimModalProps) {
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Bulk Claim - Meerdere Platen Claimen</DialogTitle>
+          <DialogDescription>Claim meerdere platen tegelijk voor een project en fase.</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           {/* Project Info */}
           <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-md">
             <div className="space-y-2">
