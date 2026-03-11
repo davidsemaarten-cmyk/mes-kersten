@@ -318,7 +318,7 @@ class TestPlateOperations:
             plate_id=test_plate.id,
             project_naam="Test Project",
             project_fase="001",
-            actief=True,
+            is_active=True,
             claimed_by=werkvoorbereider_user.id
         )
         test_db.add(claim)
@@ -539,7 +539,7 @@ class TestPlateOperations:
     def test_consume_plate_releases_claims(self, test_db: Session, admin_user: User, test_plate: Plate, test_claim: Claim):
         """Test consuming plate releases all active claims"""
         # Verify claim is active
-        assert test_claim.actief is True
+        assert test_claim.is_active is True
 
         PlateStockService.consume_plate(
             db=test_db,
@@ -551,7 +551,7 @@ class TestPlateOperations:
         test_db.refresh(test_claim)
 
         # Claim should now be inactive
-        assert test_claim.actief is False
+        assert test_claim.is_active is False
 
     def test_process_remnant_success(self, test_db: Session, werkplaats_user: User, test_plate_at_laser: Plate):
         """Test successfully processing remnant"""
@@ -668,7 +668,7 @@ class TestClaimOperations:
         assert claim.project_naam == "Project Y"
         assert claim.project_fase == "002"
         assert claim.m2_geclaimd == Decimal("5.0")
-        assert claim.actief is True
+        assert claim.is_active is True
 
         # Plate status should be updated
         test_db.refresh(test_plate)
@@ -722,7 +722,7 @@ class TestClaimOperations:
         test_db.refresh(test_claim)
         test_db.refresh(test_plate)
 
-        assert test_claim.actief is False
+        assert test_claim.is_active is False
         assert test_plate.status == "beschikbaar"  # No more active claims
 
     def test_release_claim_not_found(self, test_db: Session, werkvoorbereider_user: User):
@@ -769,7 +769,7 @@ class TestClaimOperations:
         assert len(claims) == 3
         for claim in claims:
             assert claim.project_naam == "Bulk Project"
-            assert claim.actief is True
+            assert claim.is_active is True
 
     def test_create_bulk_claims_skips_consumed(self, test_db: Session, werkvoorbereider_user: User, test_plate: Plate, test_plate_consumed: Plate):
         """Test bulk claims skips consumed plates"""
@@ -800,7 +800,7 @@ class TestClaimOperations:
         assert result["plates_freed"] == 1
 
         test_db.refresh(test_claim)
-        assert test_claim.actief is False
+        assert test_claim.is_active is False
 
 
 # ============================================================

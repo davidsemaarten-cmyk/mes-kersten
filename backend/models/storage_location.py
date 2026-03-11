@@ -30,7 +30,7 @@ class StorageLocation(Base):
     beschrijving = Column(Text, nullable=True)
 
     # Soft delete flag
-    actief = Column(Boolean, nullable=False, default=True, server_default='true', index=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default='true', index=True)
 
     # Audit timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -38,7 +38,7 @@ class StorageLocation(Base):
 
     def __repr__(self):
         """String representation showing location name"""
-        status = "actief" if self.actief else "inactief"
+        status = "active" if self.is_active else "inactive"
         return f"<StorageLocation {self.naam} ({status})>"
 
     @property

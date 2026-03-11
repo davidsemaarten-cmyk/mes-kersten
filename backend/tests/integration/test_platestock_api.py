@@ -473,7 +473,7 @@ class TestClaimEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["project_naam"] == "Project Y"
-        assert data["actief"] is True
+        assert data["is_active"] is True
 
     def test_create_bulk_claims(self, test_client: TestClient, werkvoorbereider_user, test_db, test_material, admin_user):
         """Test POST /claims/bulk"""

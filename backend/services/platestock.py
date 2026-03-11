@@ -393,7 +393,7 @@ class PlateStockService:
         active_claims = db.query(Claim).filter(
             and_(
                 Claim.plate_id == plate.id,
-                Claim.actief == True
+                Claim.is_active == True
             )
         ).count()
 
@@ -590,7 +590,7 @@ class PlateStockService:
 
             # Check for active claims
             active_claims_count = db.query(Claim).filter(
-                and_(Claim.plate_id == plate_id, Claim.actief == True)
+                and_(Claim.plate_id == plate_id, Claim.is_active == True)
             ).count()
 
             if active_claims_count > 0:
@@ -799,12 +799,12 @@ class PlateStockService:
             active_claims = db.query(Claim).filter(
                 and_(
                     Claim.plate_id == plate.id,
-                    Claim.actief == True
+                    Claim.is_active == True
                 )
             ).all()
 
             for claim in active_claims:
-                claim.actief = False
+                claim.is_active = False
 
             # Mark as consumed
             plate.is_consumed = True
@@ -906,12 +906,12 @@ class PlateStockService:
             active_claims = db.query(Claim).filter(
                 and_(
                     Claim.plate_id == original_plate.id,
-                    Claim.actief == True
+                    Claim.is_active == True
                 )
             ).all()
 
             for claim in active_claims:
-                claim.actief = False
+                claim.is_active = False
 
             original_plate.is_consumed = True
             original_plate.consumed_at = datetime.utcnow()
@@ -1055,7 +1055,7 @@ class PlateStockService:
                 project_fase=project_fase,
                 m2_geclaimd=m2_geclaimd,
                 notes=notes,
-                actief=True,
+                is_active=True,
                 claimed_by=user_id
             )
 
@@ -1152,7 +1152,7 @@ class PlateStockService:
         claim_id: UUID
     ) -> None:
         """
-        Release claim (set actief=False) with audit logging
+        Release claim (set is_active=False) with audit logging
 
         Args:
             db: Database session
@@ -1167,7 +1167,7 @@ class PlateStockService:
             if not claim:
                 raise ClaimNotFoundError(f"Claim {claim_id} not found")
 
-            claim.actief = False
+            claim.is_active = False
             db.flush()
 
             # Update plate status (doesn't commit)
@@ -1231,7 +1231,7 @@ class PlateStockService:
                     plate_id=plate_id,
                     project_naam=project_naam,
                     project_fase=project_fase,
-                    actief=True,
+                    is_active=True,
                     claimed_by=user_id
                 )
 
@@ -1294,13 +1294,13 @@ class PlateStockService:
                 and_(
                     Claim.project_naam == project_naam,
                     Claim.project_fase == project_fase,
-                    Claim.actief == True
+                    Claim.is_active == True
                 )
             ).all()
 
             plate_ids = set()
             for claim in claims:
-                claim.actief = False
+                claim.is_active = False
                 plate_ids.add(claim.plate_id)
 
             db.flush()
@@ -1426,7 +1426,7 @@ class PlateStockService:
         # Get all active claims with plate data (eager loaded to prevent N+1 queries)
         active_claims = db.query(Claim).options(
             joinedload(Claim.plate)
-        ).filter(Claim.actief == True).all()
+        ).filter(Claim.is_active == True).all()
 
         # Group by project
         projects = {}

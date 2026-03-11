@@ -348,7 +348,7 @@ def test_claim(test_db: Session, test_plate: Plate, werkvoorbereider_user: User)
         project_fase="001",
         m2_geclaimd=Decimal("8.0"),
         notes="Test claim",
-        actief=True,
+        is_active=True,
         claimed_by=werkvoorbereider_user.id
     )
     test_db.add(claim)
