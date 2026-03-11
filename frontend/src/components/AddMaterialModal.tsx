@@ -29,18 +29,29 @@ export function AddMaterialModal({ open, onClose, material }: AddMaterialModalPr
   const createMaterial = useCreateMaterial()
   const updateMaterial = useUpdateMaterial()
 
-  // Initialize form data when material prop changes (for edit mode)
+  // Reset form when modal opens: populate for edit mode, clear for create mode
   useEffect(() => {
-    if (material) {
-      setFormData({
-        materiaalgroep: material.materiaalgroep,
-        specificatie: material.specificatie,
-        oppervlaktebewerking: material.oppervlaktebewerking,
-        plaatcode_prefix: material.plaatcode_prefix,
-        kleur: material.kleur
-      })
+    if (open) {
+      if (material) {
+        setFormData({
+          materiaalgroep: material.materiaalgroep,
+          specificatie: material.specificatie,
+          oppervlaktebewerking: material.oppervlaktebewerking,
+          plaatcode_prefix: material.plaatcode_prefix,
+          kleur: material.kleur
+        })
+      } else {
+        setFormData({
+          materiaalgroep: '',
+          specificatie: null,
+          oppervlaktebewerking: '',
+          plaatcode_prefix: '',
+          kleur: '#9CA3AF'
+        })
+      }
+      setPrefixError('')
     }
-  }, [material])
+  }, [open, material])
 
   // Auto-suggest prefix when fields change (only in create mode)
   useEffect(() => {
