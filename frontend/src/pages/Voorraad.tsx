@@ -7,7 +7,7 @@
 import { useState, useMemo } from 'react'
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
-import Layout from '../components/Layout'
+import { Layout } from '../components/Layout'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
@@ -36,7 +36,7 @@ import { DraggableTableHeader } from '../components/DraggableTableHeader'
 import { usePlates } from '../hooks/usePlateStock'
 import { useColumnPreferences } from '../hooks/useColumnPreferences'
 import type { PlateWithRelations } from '../types/database'
-import { Plus, Package, Loader2, X, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Package, Loader2, X, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle } from 'lucide-react'
 
 type SortDirection = 'asc' | 'desc' | null
 type StatusFilter = 'alle' | 'bij_laser' | 'beschikbaar' | 'geclaimd'
@@ -80,7 +80,7 @@ export function Voorraad() {
     heatnummer: ''
   })
 
-  const { data: plates, isLoading } = usePlates({ include_consumed: false })
+  const { data: plates, isLoading, error } = usePlates({ include_consumed: false })
 
   // Helper functions (must be before filteredPlates useMemo)
   // Format status text
@@ -151,7 +151,7 @@ export function Voorraad() {
     const claims = Array.from(new Set(
       plates.flatMap(p =>
         (p.claims || [])
-          .filter(c => c.actief)
+          .filter(c => c.is_active)
           .map(c => `${c.project_naam}-${c.project_fase}`)
       )
     )).sort()
@@ -200,7 +200,7 @@ export function Voorraad() {
     if (columnFilters.claims) {
       const query = columnFilters.claims.toLowerCase()
       filtered = filtered.filter(p => {
-        const activeClaims = p.claims?.filter(c => c.actief) || []
+        const activeClaims = p.claims?.filter(c => c.is_active) || []
         return activeClaims.some(c =>
           `${c.project_naam}-${c.project_fase}`.toLowerCase().includes(query)
         )
@@ -392,8 +392,21 @@ export function Voorraad() {
         </div>
       )}
 
+      {/* Error State */}
+      {!isLoading && error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-red-800">Kon voorraadgegevens niet laden</p>
+              <p className="text-sm text-red-600 mt-1">Probeer de pagina te vernieuwen. Als het probleem aanhoudt, controleer of de backend draait.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Empty State - Only show if NO plates at all AND no filters active */}
-      {!isLoading && plates && plates.length === 0 && !hasActiveFilters && (
+      {!isLoading && !error && plates && plates.length === 0 && !hasActiveFilters && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Package className="h-12 w-12 text-gray-400 mb-4" />
@@ -408,7 +421,7 @@ export function Voorraad() {
       )}
 
       {/* Plates View - Table or Grid - Always show if we have plates */}
-      {!isLoading && plates && plates.length > 0 && (
+      {!isLoading && !error && plates && plates.length > 0 && (
         <>
           {viewMode === 'table' ? (
             <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
@@ -562,7 +575,7 @@ export function Voorraad() {
                       <TableRow
                         key={plate.id}
                         onClick={statusFilter !== 'bij_laser' ? () => handlePlateClick(plate) : undefined}
-                        className={statusFilter !== 'bij_laser' ? "cursor-pointer hover:bg-gray-50 transition-colors h-14" : "hover:bg-gray-50 transition-colors h-14"}
+                        className={statusFilter !== 'bij_laser' ? "cursor-pointer transition-colors h-14" : "transition-colors h-14"}
                       >
                         {statusFilter === 'bij_laser' ? (
                           // Bij Laser: Fixed cells

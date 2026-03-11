@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from 'react'
-import Layout from '../components/Layout'
+import { Layout } from '../components/Layout'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 import { Label } from '../components/ui/label'
@@ -27,14 +27,14 @@ import {
 } from '../components/ui/select'
 import { useClaims, useReleaseClaim, useReleaseByProject } from '../hooks/usePlateStock'
 import type { ClaimWithPlate } from '../types/database'
-import { Loader2, X, Package, AlertCircle } from 'lucide-react'
+import { Loader2, X, Package, AlertCircle, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function Claims() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'released'>('active')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const { data: claims, isLoading } = useClaims()
+  const { data: claims, isLoading, error } = useClaims()
   const releaseClaim = useReleaseClaim()
   const releaseByProject = useReleaseByProject()
 
@@ -46,9 +46,9 @@ export function Claims() {
 
     // Filter by status
     if (filterStatus === 'active') {
-      filtered = filtered.filter(c => c.actief)
+      filtered = filtered.filter(c => c.is_active)
     } else if (filterStatus === 'released') {
-      filtered = filtered.filter(c => !c.actief)
+      filtered = filtered.filter(c => !c.is_active)
     }
 
     // Filter by search query
@@ -94,7 +94,7 @@ export function Claims() {
         project_fase: claims[0].project_fase,
         claims,
         totalM2: totalM2.toFixed(2),
-        activeCount: claims.filter(c => c.actief).length
+        activeCount: claims.filter(c => c.is_active).length
       }
     }).sort((a, b) => {
       // Sort by project name, then fase
@@ -131,7 +131,7 @@ export function Claims() {
     }
   }
 
-  const activeClaims = claims?.filter(c => c.actief) || []
+  const activeClaims = claims?.filter(c => c.is_active) || []
   const totalActiveM2 = activeClaims.reduce((total, claim) => {
     if (claim.m2_geclaimd) {
       return total + parseFloat(claim.m2_geclaimd.toString())
@@ -208,7 +208,7 @@ export function Claims() {
 
             <div className="w-full md:w-48">
               <Label htmlFor="status">Status</Label>
-              <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
+              <Select value={filterStatus} onValueChange={(value: 'all' | 'active' | 'released') => setFilterStatus(value)}>
                 <SelectTrigger id="status">
                   <SelectValue />
                 </SelectTrigger>
@@ -231,8 +231,21 @@ export function Claims() {
         </div>
       )}
 
+      {/* Error State */}
+      {!isLoading && error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-red-800">Kon claims niet laden</p>
+              <p className="text-sm text-red-600 mt-1">Probeer de pagina te vernieuwen. Als het probleem aanhoudt, controleer of de backend draait.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Empty State */}
-      {!isLoading && filteredClaims.length === 0 && (
+      {!isLoading && !error && filteredClaims.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Package className="h-12 w-12 text-gray-400 mb-4" />
@@ -249,7 +262,7 @@ export function Claims() {
       )}
 
       {/* Claims by Project */}
-      {!isLoading && projectGroups.length > 0 && (
+      {!isLoading && !error && projectGroups.length > 0 && (
         <div className="space-y-4">
           {projectGroups.map(group => (
             <Card key={group.key}>
@@ -315,12 +328,12 @@ export function Claims() {
                             {new Date(claim.claimed_at).toLocaleDateString('nl-NL')}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={claim.actief ? 'default' : 'outline'}>
-                              {claim.actief ? 'Actief' : 'Vrijgegeven'}
+                            <Badge variant={claim.is_active ? 'default' : 'outline'}>
+                              {claim.is_active ? 'Actief' : 'Vrijgegeven'}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            {claim.actief && (
+                            {claim.is_active && (
                               <Button
                                 variant="ghost"
                                 size="sm"

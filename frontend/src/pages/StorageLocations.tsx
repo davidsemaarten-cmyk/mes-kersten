@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePermissions } from '../hooks/usePermissions';
-import Layout from '../components/Layout';
+import { Layout } from '../components/Layout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import {
   useStorageLocations,
   useCreateStorageLocation,
@@ -52,7 +52,7 @@ export function StorageLocations() {
   const [naam, setNaam] = useState('');
   const [beschrijving, setBeschrijving] = useState('');
 
-  const { data: locations, isLoading } = useStorageLocations(showInactive);
+  const { data: locations, isLoading, error } = useStorageLocations(showInactive);
   const createMutation = useCreateStorageLocation();
   const updateMutation = useUpdateStorageLocation();
   const deleteMutation = useDeleteStorageLocation();
@@ -158,6 +158,16 @@ export function StorageLocations() {
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           </div>
+        ) : error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-red-800">Kon locaties niet laden</p>
+                <p className="text-sm text-red-600 mt-1">Probeer de pagina te vernieuwen. Als het probleem aanhoudt, controleer of de backend draait.</p>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
             <Table>
@@ -179,7 +189,7 @@ export function StorageLocations() {
                         {location.beschrijving || '-'}
                       </TableCell>
                       <TableCell>
-                        {location.actief ? (
+                        {location.is_active ? (
                           <Badge
                             variant="outline"
                             className="border-green-200 bg-green-50 text-green-700"
