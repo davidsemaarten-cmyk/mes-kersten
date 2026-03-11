@@ -13,15 +13,17 @@ interface AddMaterialModalProps {
   material?: Material | null
 }
 
+const INITIAL_FORM_DATA: MaterialCreate = {
+  materiaalgroep: '',
+  specificatie: null,
+  oppervlaktebewerking: '',
+  plaatcode_prefix: '',
+  kleur: '#9CA3AF'
+}
+
 export function AddMaterialModal({ open, onClose, material }: AddMaterialModalProps) {
   const isEditMode = !!material
-  const [formData, setFormData] = useState<MaterialCreate>({
-    materiaalgroep: '',
-    specificatie: null,
-    oppervlaktebewerking: '',
-    plaatcode_prefix: '',
-    kleur: '#9CA3AF'
-  })
+  const [formData, setFormData] = useState<MaterialCreate>(INITIAL_FORM_DATA)
 
   const [prefixError, setPrefixError] = useState('')
 
@@ -41,13 +43,7 @@ export function AddMaterialModal({ open, onClose, material }: AddMaterialModalPr
           kleur: material.kleur
         })
       } else {
-        setFormData({
-          materiaalgroep: '',
-          specificatie: null,
-          oppervlaktebewerking: '',
-          plaatcode_prefix: '',
-          kleur: '#9CA3AF'
-        })
+        setFormData(INITIAL_FORM_DATA)
       }
       setPrefixError('')
     }
@@ -89,13 +85,7 @@ export function AddMaterialModal({ open, onClose, material }: AddMaterialModalPr
         {
           onSuccess: () => {
             onClose()
-            setFormData({
-              materiaalgroep: '',
-              specificatie: null,
-              oppervlaktebewerking: '',
-              plaatcode_prefix: '',
-              kleur: '#9CA3AF'
-            })
+            setFormData(INITIAL_FORM_DATA)
           }
         }
       )
@@ -104,13 +94,7 @@ export function AddMaterialModal({ open, onClose, material }: AddMaterialModalPr
       createMaterial.mutate(formData, {
         onSuccess: () => {
           onClose()
-          setFormData({
-            materiaalgroep: '',
-            specificatie: null,
-            oppervlaktebewerking: '',
-            plaatcode_prefix: '',
-            kleur: '#9CA3AF'
-          })
+          setFormData(INITIAL_FORM_DATA)
         }
       })
     }

@@ -24,6 +24,7 @@ import { FaseCombobox } from './FaseCombobox'
 import { useProject } from '../hooks/useProjects'
 import { useAuth } from '../hooks/useAuth'
 import type { PlateWithRelations } from '../types/database'
+import { calculatePlateArea } from '../lib/utils'
 import { Package, ArrowLeft, Trash2, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -68,7 +69,7 @@ export function PlateDetailsModal({ open, onClose, plate }: PlateDetailsModalPro
   if (!plate) return null
 
   const calculateArea = () => {
-    return ((plate.width * plate.length) / 1_000_000).toFixed(2)
+    return calculatePlateArea(plate.width, plate.length)
   }
 
   const handleSave = async () => {

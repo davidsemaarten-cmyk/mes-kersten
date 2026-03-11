@@ -27,7 +27,9 @@ import {
 } from '../components/ui/select'
 import { useClaims, useReleaseClaim, useReleaseByProject } from '../hooks/usePlateStock'
 import type { ClaimWithPlate } from '../types/database'
-import { Loader2, X, Package, AlertCircle, AlertTriangle } from 'lucide-react'
+import { calculatePlateArea } from '../lib/utils'
+import { Loader2, X, Package, AlertCircle } from 'lucide-react'
+import { ErrorAlert } from '../components/ErrorAlert'
 import { toast } from 'sonner'
 
 export function Claims() {
@@ -83,7 +85,7 @@ export function Claims() {
         if (claim.m2_geclaimd) {
           return total + parseFloat(claim.m2_geclaimd.toString())
         } else if (claim.plate) {
-          return total + ((claim.plate.width * claim.plate.length) / 1_000_000)
+          return total + parseFloat(calculatePlateArea(claim.plate.width, claim.plate.length))
         }
         return total
       }, 0)
@@ -136,7 +138,7 @@ export function Claims() {
     if (claim.m2_geclaimd) {
       return total + parseFloat(claim.m2_geclaimd.toString())
     } else if (claim.plate) {
-      return total + ((claim.plate.width * claim.plate.length) / 1_000_000)
+      return total + parseFloat(calculatePlateArea(claim.plate.width, claim.plate.length))
     }
     return total
   }, 0)
@@ -233,15 +235,10 @@ export function Claims() {
 
       {/* Error State */}
       {!isLoading && error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-red-800">Kon claims niet laden</p>
-              <p className="text-sm text-red-600 mt-1">Probeer de pagina te vernieuwen. Als het probleem aanhoudt, controleer of de backend draait.</p>
-            </div>
-          </div>
-        </div>
+        <ErrorAlert
+          title="Kon claims niet laden"
+          description="Probeer de pagina te vernieuwen. Als het probleem aanhoudt, controleer of de backend draait."
+        />
       )}
 
       {/* Empty State */}
@@ -308,8 +305,8 @@ export function Claims() {
                   <TableBody>
                     {group.claims.map(claim => {
                       const plateArea = claim.plate
-                        ? ((claim.plate.width * claim.plate.length) / 1_000_000).toFixed(2)
-                        : '0.00'
+                        ? calculatePlateArea(claim.plate.width, claim.plate.length)
+                        : '0.000'
 
                       return (
                         <TableRow key={claim.id}>

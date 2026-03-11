@@ -8,6 +8,18 @@ from datetime import datetime
 from typing import List
 
 
+def _validate_no_html(v: str | None, required: bool = True) -> str | None:
+    """Shared HTML validation helper for string fields."""
+    if v is None:
+        return v
+    v = v.strip()
+    if required and len(v) == 0:
+        raise ValueError('Mag niet leeg zijn')
+    if '<' in v or '>' in v:
+        raise ValueError('Mag geen HTML-tekens bevatten')
+    return v
+
+
 class OrderreeksCreate(BaseModel):
     """
     Schema for creating an orderreeks
@@ -20,12 +32,7 @@ class OrderreeksCreate(BaseModel):
     @classmethod
     def validate_title(cls, v: str) -> str:
         """Validate title — no HTML tags allowed"""
-        v = v.strip()
-        if len(v) == 0:
-            raise ValueError('Titel mag niet leeg zijn')
-        if '<' in v or '>' in v:
-            raise ValueError('Titel mag geen HTML-tekens bevatten')
-        return v
+        return _validate_no_html(v, required=True)  # type: ignore[return-value]
 
 
 class OrderreeksUpdate(BaseModel):
@@ -39,13 +46,7 @@ class OrderreeksUpdate(BaseModel):
     @classmethod
     def validate_title_update(cls, v: str | None) -> str | None:
         """Validate title in update — no HTML tags allowed"""
-        if v is not None:
-            v = v.strip()
-            if len(v) == 0:
-                raise ValueError('Titel mag niet leeg zijn')
-            if '<' in v or '>' in v:
-                raise ValueError('Titel mag geen HTML-tekens bevatten')
-        return v
+        return _validate_no_html(v, required=True)
 
 
 class OrderBasicResponse(BaseModel):

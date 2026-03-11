@@ -10,6 +10,18 @@ from uuid import UUID
 import re
 
 
+def _validate_no_html(v: str | None, required: bool = True) -> str | None:
+    """Shared HTML validation helper for string fields."""
+    if v is None:
+        return v
+    v = v.strip()
+    if required and len(v) == 0:
+        raise ValueError('Mag niet leeg zijn')
+    if '<' in v or '>' in v:
+        raise ValueError('Mag geen HTML-tekens bevatten')
+    return v
+
+
 # ============================================================
 # PROJECT SCHEMAS
 # ============================================================
@@ -44,12 +56,7 @@ class ProjectBase(BaseModel):
     @classmethod
     def validate_naam(cls, v: str) -> str:
         """Validate project name — no HTML tags allowed"""
-        v = v.strip()
-        if len(v) == 0:
-            raise ValueError('Project name cannot be empty')
-        if '<' in v or '>' in v:
-            raise ValueError('Naam mag geen HTML-tekens bevatten')
-        return v
+        return _validate_no_html(v, required=True)  # type: ignore[return-value]
 
 
 class ProjectCreate(ProjectBase):
@@ -70,13 +77,7 @@ class ProjectUpdate(BaseModel):
     @classmethod
     def validate_naam_update(cls, v: Optional[str]) -> Optional[str]:
         """Validate project name in update — no HTML tags allowed"""
-        if v is not None:
-            v = v.strip()
-            if len(v) == 0:
-                raise ValueError('Project name cannot be empty')
-            if '<' in v or '>' in v:
-                raise ValueError('Naam mag geen HTML-tekens bevatten')
-        return v
+        return _validate_no_html(v, required=True)
 
 
 class ProjectResponse(ProjectBase):

@@ -36,7 +36,9 @@ import { DraggableTableHeader } from '../components/DraggableTableHeader'
 import { usePlates } from '../hooks/usePlateStock'
 import { useColumnPreferences } from '../hooks/useColumnPreferences'
 import type { PlateWithRelations } from '../types/database'
-import { Plus, Package, Loader2, X, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown, AlertTriangle } from 'lucide-react'
+import { calculatePlateArea } from '../lib/utils'
+import { Plus, Package, Loader2, X, LayoutGrid, List, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { ErrorAlert } from '../components/ErrorAlert'
 
 type SortDirection = 'asc' | 'desc' | null
 type StatusFilter = 'alle' | 'bij_laser' | 'beschikbaar' | 'geclaimd'
@@ -109,7 +111,7 @@ export function Voorraad() {
 
   // Calculate area for a plate
   const calculateArea = (plate: PlateWithRelations) => {
-    return ((plate.width * plate.length) / 1_000_000).toFixed(2)
+    return calculatePlateArea(plate.width, plate.length)
   }
 
   // Toggle thickness sort direction: null → desc → asc → null
@@ -394,15 +396,10 @@ export function Voorraad() {
 
       {/* Error State */}
       {!isLoading && error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-red-800">Kon voorraadgegevens niet laden</p>
-              <p className="text-sm text-red-600 mt-1">Probeer de pagina te vernieuwen. Als het probleem aanhoudt, controleer of de backend draait.</p>
-            </div>
-          </div>
-        </div>
+        <ErrorAlert
+          title="Kon voorraadgegevens niet laden"
+          description="Probeer de pagina te vernieuwen. Als het probleem aanhoudt, controleer of de backend draait."
+        />
       )}
 
       {/* Empty State - Only show if NO plates at all AND no filters active */}

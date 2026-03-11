@@ -3,7 +3,7 @@
  * Modal for adding one or multiple plates with cascading material selection
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -13,6 +13,7 @@ import { Textarea } from './ui/textarea'
 import { useMaterials, useCreatePlates } from '../hooks/usePlateStock'
 import { useStorageLocations } from '../hooks/useStorageLocations'
 import type { PlateCreate } from '../types/database'
+import { calculatePlateArea } from '../lib/utils'
 
 interface AddPlatesModalProps {
   open: boolean
@@ -103,7 +104,7 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
   }, [materials, selectedMaterialGroep, selectedSpecificatie, selectedOppervlaktebewerking, specificaties])
 
   // Update material_prefix when selection changes
-  useMemo(() => {
+  useEffect(() => {
     if (selectedMaterial) {
       setFormData(prev => ({ ...prev, material_prefix: selectedMaterial.plaatcode_prefix }))
     }
@@ -172,9 +173,9 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
 
   const calculateArea = () => {
     if (formData.width && formData.length) {
-      return ((formData.width * formData.length) / 1_000_000).toFixed(2)
+      return calculatePlateArea(formData.width, formData.length)
     }
-    return '0.00'
+    return '0.000'
   }
 
   return (
@@ -288,9 +289,6 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
                 }}
                 required
               />
-              {formData.thickness < 0 && (
-                <p className="text-xs text-destructive">Dikte moet groter dan 0 zijn</p>
-              )}
             </div>
 
             <div className="space-y-2">
