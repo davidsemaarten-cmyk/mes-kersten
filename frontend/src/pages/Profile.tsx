@@ -58,10 +58,6 @@ export function Profile() {
                 {user.role && <Badge>{getRoleName(user.role)}</Badge>}
               </div>
 
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Gebruikersnaam</p>
-                <p className="text-base font-mono">{user.username}</p>
-              </div>
             </div>
           </CardContent>
         </Card>
