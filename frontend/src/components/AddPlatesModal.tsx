@@ -20,6 +20,19 @@ interface AddPlatesModalProps {
   onClose: () => void
 }
 
+const INITIAL_FORM_DATA = {
+  material_prefix: '',
+  quality: '',
+  thickness: 0,
+  width: 0,
+  length: 0,
+  weight: undefined as number | undefined,
+  location: '',
+  heatnummer: '',
+  notes: '',
+  aantal: 1
+}
+
 export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
   const { data: materials } = useMaterials()
   const createPlates = useCreatePlates()
@@ -34,18 +47,7 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
   const [useCustomWidth, setUseCustomWidth] = useState(false)
   const [useCustomLength, setUseCustomLength] = useState(false)
 
-  const [formData, setFormData] = useState<PlateCreate & { aantal: number }>({
-    material_prefix: '',
-    quality: '',
-    thickness: 0,
-    width: 0,
-    length: 0,
-    weight: undefined,
-    location: '',
-    heatnummer: '',
-    notes: '',
-    aantal: 1
-  })
+  const [formData, setFormData] = useState<PlateCreate & { aantal: number }>(INITIAL_FORM_DATA)
 
   // Common plate dimensions (in mm)
   const commonWidths = [1000, 1250, 1500, 2000, 2500, 3000]
@@ -133,18 +135,7 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
       setSelectedOppervlaktebewerking('')
       setUseCustomWidth(false)
       setUseCustomLength(false)
-      setFormData({
-        material_prefix: '',
-        quality: '',
-        thickness: 0,
-        width: 0,
-        length: 0,
-        weight: undefined,
-        location: '',
-        heatnummer: '',
-        notes: '',
-        aantal: 1
-      })
+      setFormData(INITIAL_FORM_DATA)
       onClose()
     } catch (error) {
       // Error handled by mutation
@@ -482,7 +473,7 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
               required
             />
             <p className="text-sm text-muted-foreground">
-              Plaatnum mers worden automatisch gegenereerd
+              Plaatnummers worden automatisch gegenereerd
             </p>
           </div>
 

@@ -145,7 +145,7 @@ export function CreateProjectModal({ open, onClose }: CreateProjectModalProps) {
             >
               Annuleren
             </Button>
-            <Button type="submit" disabled={createProject.isPending}>
+            <Button type="submit" disabled={createProject.isPending || !formData.code.trim() || !formData.naam.trim()}>
               {createProject.isPending ? 'Aanmaken...' : 'Project Aanmaken'}
             </Button>
           </DialogFooter>

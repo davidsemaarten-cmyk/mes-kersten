@@ -7,17 +7,7 @@ from uuid import UUID
 from datetime import datetime
 from typing import List
 
-
-def _validate_no_html(v: str | None, required: bool = True) -> str | None:
-    """Shared HTML validation helper for string fields."""
-    if v is None:
-        return v
-    v = v.strip()
-    if required and len(v) == 0:
-        raise ValueError('Mag niet leeg zijn')
-    if '<' in v or '>' in v:
-        raise ValueError('Mag geen HTML-tekens bevatten')
-    return v
+from backend.utils.validators import validate_no_html
 
 
 class OrderreeksCreate(BaseModel):
@@ -32,7 +22,7 @@ class OrderreeksCreate(BaseModel):
     @classmethod
     def validate_title(cls, v: str) -> str:
         """Validate title — no HTML tags allowed"""
-        return _validate_no_html(v, required=True)  # type: ignore[return-value]
+        return validate_no_html(v, required=True)  # type: ignore[return-value]
 
 
 class OrderreeksUpdate(BaseModel):
@@ -46,7 +36,7 @@ class OrderreeksUpdate(BaseModel):
     @classmethod
     def validate_title_update(cls, v: str | None) -> str | None:
         """Validate title in update — no HTML tags allowed"""
-        return _validate_no_html(v, required=True)
+        return validate_no_html(v, required=True)
 
 
 class OrderBasicResponse(BaseModel):
