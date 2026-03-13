@@ -153,7 +153,7 @@ export function Admin() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {material.plate_count || 0} platen
+                          {(material.plate_count || 0) === 1 ? '1 plaat' : `${material.plate_count || 0} platen`}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
