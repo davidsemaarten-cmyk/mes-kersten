@@ -136,6 +136,7 @@ export function ProjectDetail() {
             {permissions.canDeleteProjects && (
               <Button
                 variant="outline"
+                className="border-red-300 text-red-600 hover:bg-red-50"
                 onClick={handleDelete}
                 disabled={deleteProject.isPending}
               >
