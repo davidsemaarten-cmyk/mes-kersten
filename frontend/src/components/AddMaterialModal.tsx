@@ -233,7 +233,7 @@ export function AddMaterialModal({ open, onClose, material }: AddMaterialModalPr
             >
               {isEditMode
                 ? (updateMaterial.isPending ? 'Opslaan...' : 'Materiaal Bijwerken')
-                : (createMaterial.isPending ? 'Opslaan...' : 'Materiaal Toevoegen')}
+                : (createMaterial.isPending ? 'Aanmaken...' : 'Aanmaken')}
             </Button>
           </DialogFooter>
         </form>

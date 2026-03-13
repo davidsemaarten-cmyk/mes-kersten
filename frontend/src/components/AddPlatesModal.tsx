@@ -499,7 +499,7 @@ export function AddPlatesModal({ open, onClose }: AddPlatesModalProps) {
               type="submit"
               disabled={createPlates.isPending || !selectedMaterial || formData.thickness <= 0 || formData.width <= 0 || formData.length <= 0}
             >
-              {createPlates.isPending ? 'Toevoegen...' : 'Toevoegen'}
+              {createPlates.isPending ? 'Aanmaken...' : 'Aanmaken'}
             </Button>
           </div>
         </form>
