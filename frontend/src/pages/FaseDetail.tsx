@@ -92,18 +92,16 @@ export function FaseDetail() {
         </div>
 
         {/* Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" aria-label="Terug" onClick={() => navigate(`/projecten/${fase.project_id}`)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
           <div>
             <h1 className="text-2xl font-semibold font-mono">{fase.full_code}</h1>
             {fase.beschrijving && (
-              <p className="text-lg text-muted-foreground mt-1">{fase.beschrijving}</p>
+              <p className="text-lg text-muted-foreground">{fase.beschrijving}</p>
             )}
           </div>
-
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Terug
-          </Button>
         </div>
 
         {/* Tabs */}
