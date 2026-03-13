@@ -5,7 +5,7 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import Layout from '../components/Layout'
+import { Layout } from '../components/Layout'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
@@ -125,7 +125,7 @@ export function Admin() {
                 </TableHeader>
                 <TableBody>
                   {materials.map((material) => (
-                    <TableRow key={material.id}>
+                    <TableRow key={material.id} className="group">
                       <TableCell className="font-mono font-medium">
                         {material.plaatcode_prefix}
                       </TableCell>
@@ -157,7 +157,7 @@ export function Admin() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
+                        <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             variant="ghost"
                             size="sm"

@@ -337,7 +337,7 @@ export function LaserplannerDetail() {
   const renderRow = useCallback((item: LaserLineItem, dimmed = false) => {
     const dxf = dxfByLineItem[item.id]
     return (
-      <TableRow key={item.id} className={cn(dimmed && 'opacity-60')}>
+      <TableRow key={item.id} className={cn('group', dimmed && 'opacity-60')}>
         {/* DXF thumbnail */}
         <TableCell className="py-1 w-16">
           <ThumbnailCell dxf={dxf} onClickView={setViewingDXF} />
@@ -374,7 +374,7 @@ export function LaserplannerDetail() {
 
         {/* Acties */}
         <TableCell className="w-36 py-1">
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             {/* Edit */}
             <Button
               variant="ghost"
