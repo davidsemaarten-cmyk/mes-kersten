@@ -37,10 +37,10 @@ export function Login() {
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="space-y-4">
             <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email adres
+              <label htmlFor="email-address" className="block text-sm text-muted-foreground mb-1">
+                E-mailadres
               </label>
               <input
                 id="email-address"
@@ -48,14 +48,14 @@ export function Login() {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Email adres"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError('') }}
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="block text-sm text-muted-foreground mb-1">
                 Wachtwoord
               </label>
               <input
@@ -64,7 +64,7 @@ export function Login() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Wachtwoord"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError('') }}
