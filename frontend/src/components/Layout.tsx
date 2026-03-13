@@ -12,7 +12,8 @@ import {
   ChevronRight,
   LogOut,
   User,
-  Zap
+  Zap,
+  MapPin
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -23,7 +24,7 @@ interface LayoutProps {
  * Linear-inspired sidebar layout component
  * Features collapsible sidebar with localStorage persistence
  */
-export default function Layout({ children }: LayoutProps) {
+export function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth()
   const { permissions } = usePermissions()
   const navigate = useNavigate()
@@ -54,6 +55,7 @@ export default function Layout({ children }: LayoutProps) {
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Projecten', path: '/projecten', icon: Folder, requiresPermission: 'canCreateProjects' as const },
     { name: 'Voorraad', path: '/voorraad', icon: Package },
+    { name: 'Locatiebeheer', path: '/storage-locations', icon: MapPin },
     { name: 'Laserplanner', path: '/laserplanner', icon: Zap, requiresPermission: 'canPlanLaser' as const },
     { name: 'Claims', path: '/claims', icon: FileText },
     { name: 'Admin', path: '/admin', icon: Settings },
@@ -173,6 +175,3 @@ export default function Layout({ children }: LayoutProps) {
     </div>
   )
 }
-
-// Named export for consistency
-export { Layout }
