@@ -48,13 +48,13 @@ export function ProjectDetail() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'actief':
-        return 'bg-green-500'
+        return 'bg-green-50 border-green-200 text-green-700'
       case 'afgerond':
-        return 'bg-blue-500'
+        return 'bg-blue-50 border-blue-200 text-blue-700'
       case 'geannuleerd':
-        return 'bg-gray-500'
+        return 'bg-muted border-border text-muted-foreground'
       default:
-        return 'bg-gray-500'
+        return 'bg-muted border-border text-muted-foreground'
     }
   }
 
@@ -118,7 +118,7 @@ export function ProjectDetail() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-4xl font-bold font-mono">{project.code}</h1>
-              <Badge className={getStatusColor(project.status)}>
+              <Badge variant="outline" className={getStatusColor(project.status)}>
                 {getStatusLabel(project.status)}
               </Badge>
             </div>
@@ -189,7 +189,7 @@ export function ProjectDetail() {
 
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Status</p>
-                <Badge className={getStatusColor(project.status)}>
+                <Badge variant="outline" className={getStatusColor(project.status)}>
                   {getStatusLabel(project.status)}
                 </Badge>
               </div>

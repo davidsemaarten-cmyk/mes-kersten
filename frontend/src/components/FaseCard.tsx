@@ -19,13 +19,13 @@ export function FaseCard({ fase, onClick }: FaseCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'actief':
-        return 'bg-green-500'
+        return 'bg-green-50 border-green-200 text-green-700'
       case 'gereed':
-        return 'bg-blue-500'
+        return 'bg-blue-50 border-blue-200 text-blue-700'
       case 'gearchiveerd':
-        return 'bg-gray-500'
+        return 'bg-muted border-border text-muted-foreground'
       default:
-        return 'bg-gray-500'
+        return 'bg-muted border-border text-muted-foreground'
     }
   }
 
@@ -66,7 +66,7 @@ export function FaseCard({ fase, onClick }: FaseCardProps) {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-bold font-mono">{fase.full_code || fase.fase_nummer}</h3>
-              <Badge className={getStatusColor(fase.status)}>{getStatusLabel(fase.status)}</Badge>
+              <Badge variant="outline" className={getStatusColor(fase.status)}>{getStatusLabel(fase.status)}</Badge>
             </div>
             {fase.beschrijving && (
               <p className="text-sm text-muted-foreground mt-1">{fase.beschrijving}</p>

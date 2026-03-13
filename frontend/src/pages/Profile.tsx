@@ -55,7 +55,7 @@ export function Profile() {
 
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Rol</p>
-                {user.role && <Badge>{getRoleName(user.role)}</Badge>}
+                {user.role && <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-700">{getRoleName(user.role)}</Badge>}
               </div>
 
             </div>

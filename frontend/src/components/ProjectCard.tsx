@@ -22,13 +22,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'actief':
-        return 'bg-green-500'
+        return 'bg-green-50 border-green-200 text-green-700'
       case 'afgerond':
-        return 'bg-blue-500'
+        return 'bg-blue-50 border-blue-200 text-blue-700'
       case 'geannuleerd':
-        return 'bg-gray-500'
+        return 'bg-muted border-border text-muted-foreground'
       default:
-        return 'bg-gray-500'
+        return 'bg-muted border-border text-muted-foreground'
     }
   }
 
@@ -65,7 +65,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <h3 className="text-2xl font-bold font-mono">{project.code}</h3>
             <p className="text-lg font-medium text-foreground mt-1">{project.naam}</p>
           </div>
-          <Badge className={getStatusColor(project.status)}>{getStatusLabel(project.status)}</Badge>
+          <Badge variant="outline" className={getStatusColor(project.status)}>{getStatusLabel(project.status)}</Badge>
         </div>
       </CardHeader>
 
