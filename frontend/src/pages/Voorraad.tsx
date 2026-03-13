@@ -303,7 +303,7 @@ export function Voorraad() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Voorraad</h1>
           <p className="text-sm text-gray-600 mt-1">
-            {plates ? `${plates.length} platen in voorraad` : 'Laden...'}
+            {isLoading ? 'Laden...' : `${plates?.length ?? 0} platen in voorraad`}
           </p>
         </div>
 

@@ -151,7 +151,7 @@ export function Claims() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Claims</h1>
           <p className="text-sm text-gray-600 mt-1">
-            {claims ? `${activeClaims.length} actieve claims` : 'Laden...'}
+            {isLoading ? 'Laden...' : `${activeClaims.length} actieve claims`}
           </p>
         </div>
       </div>
