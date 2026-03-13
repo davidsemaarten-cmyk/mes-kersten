@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { MapPin, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { ErrorAlert } from '../components/ErrorAlert';
 import {
   useStorageLocations,
@@ -164,6 +164,14 @@ export function StorageLocations() {
             title="Kon locaties niet laden"
             description="Probeer de pagina te vernieuwen. Als het probleem aanhoudt, controleer of de backend draait."
           />
+        ) : !locations || locations.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <MapPin className="mx-auto h-12 w-12 opacity-30 mb-4" />
+            <p className="text-sm">Nog geen opslaglocaties aangemaakt.</p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={openCreateDialog}>
+              Eerste locatie toevoegen
+            </Button>
+          </div>
         ) : (
           <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
             <Table>
@@ -177,61 +185,53 @@ export function StorageLocations() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {locations && locations.length > 0 ? (
-                  locations.map((location) => (
-                    <TableRow key={location.id}>
-                      <TableCell className="font-medium">{location.naam}</TableCell>
-                      <TableCell className="text-gray-600">
-                        {location.beschrijving || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {location.is_active ? (
-                          <Badge
-                            variant="outline"
-                            className="border-green-200 bg-green-50 text-green-700"
-                          >
-                            Actief
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="border-gray-200 bg-gray-50 text-gray-600"
-                          >
-                            Inactief
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {new Date(location.created_at).toLocaleDateString('nl-NL')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(location)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openDeleteDialog(location)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12 text-gray-500">
-                      Geen locaties gevonden
+                {locations.map((location) => (
+                  <TableRow key={location.id}>
+                    <TableCell className="font-medium">{location.naam}</TableCell>
+                    <TableCell className="text-gray-600">
+                      {location.beschrijving || '-'}
+                    </TableCell>
+                    <TableCell>
+                      {location.is_active ? (
+                        <Badge
+                          variant="outline"
+                          className="border-green-200 bg-green-50 text-green-700"
+                        >
+                          Actief
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="border-gray-200 bg-gray-50 text-gray-600"
+                        >
+                          Inactief
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-gray-600">
+                      {new Date(location.created_at).toLocaleDateString('nl-NL')}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(location)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openDeleteDialog(location)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
-                )}
+                ))}
               </TableBody>
             </Table>
           </div>

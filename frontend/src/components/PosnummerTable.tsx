@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Pencil, Trash2, Search } from 'lucide-react'
+import { Package, Pencil, Trash2, Search } from 'lucide-react'
 import { usePosnummers, useDeletePosnummer } from '@/hooks/usePosnummers'
 import { usePermissions } from '@/hooks/usePermissions'
 import { toast } from 'sonner'
@@ -17,9 +17,10 @@ import type { Posnummer } from '@/types/database'
 interface PosnummerTableProps {
   faseId: string
   onEdit?: (posnummer: Posnummer) => void
+  onAdd?: () => void
 }
 
-export function PosnummerTable({ faseId, onEdit }: PosnummerTableProps) {
+export function PosnummerTable({ faseId, onEdit, onAdd }: PosnummerTableProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const { permissions, canManageProjects } = usePermissions()
 
@@ -81,10 +82,16 @@ export function PosnummerTable({ faseId, onEdit }: PosnummerTableProps) {
 
       {/* Table */}
       {!posnummers || posnummers.length === 0 ? (
-        <div className="text-center p-8 border border-dashed rounded-lg">
-          <p className="text-muted-foreground">
-            {searchQuery ? 'Geen posnummers gevonden met dit materiaal' : 'Nog geen posnummers aangemaakt'}
+        <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
+          <Package className="mx-auto h-12 w-12 opacity-30 mb-4" />
+          <p className="text-sm">
+            {searchQuery ? 'Geen posnummers gevonden met dit materiaal' : 'Nog geen posnummers aangemaakt.'}
           </p>
+          {!searchQuery && onAdd && canManageProjects && (
+            <Button variant="outline" size="sm" className="mt-4" onClick={onAdd}>
+              Eerste posnummer toevoegen
+            </Button>
+          )}
         </div>
       ) : (
         <div className="border rounded-lg">

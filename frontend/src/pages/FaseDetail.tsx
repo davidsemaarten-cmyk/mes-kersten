@@ -269,7 +269,7 @@ export function FaseDetail() {
                 <p className="text-muted-foreground">Laden...</p>
               </div>
             ) : (
-              <PosnummerTable faseId={faseId!} />
+              <PosnummerTable faseId={faseId!} onAdd={() => setCreatePosnummerOpen(true)} />
             )}
           </TabsContent>
 
