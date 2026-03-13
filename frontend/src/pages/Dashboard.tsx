@@ -27,7 +27,7 @@ export function Dashboard() {
           {/* API Status Card */}
           <Card>
             <CardHeader>
-              <CardTitle>API Status</CardTitle>
+              <CardTitle>API-status</CardTitle>
             </CardHeader>
             <CardContent>
               {apiStatus ? (
@@ -37,16 +37,16 @@ export function Dashboard() {
                     <span className="text-green-600">{apiStatus.status}</span>
                   </p>
                   <p className="text-sm">
-                    <span className="font-medium">Message:</span>{' '}
+                    <span className="font-medium">Bericht:</span>{' '}
                     {apiStatus.message}
                   </p>
                   <p className="text-sm">
-                    <span className="font-medium">Version:</span>{' '}
+                    <span className="font-medium">Versie:</span>{' '}
                     {apiStatus.version}
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Loading...</p>
+                <p className="text-sm text-muted-foreground">Laden...</p>
               )}
             </CardContent>
           </Card>
@@ -54,7 +54,7 @@ export function Dashboard() {
           {/* Quick Actions Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>Snelkoppelingen</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -80,7 +80,7 @@ export function Dashboard() {
         {/* Coming Soon Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Coming Soon</CardTitle>
+            <CardTitle>Binnenkort beschikbaar</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
@@ -103,7 +103,7 @@ export function Dashboard() {
               rel="noopener noreferrer"
               className="text-primary hover:underline text-sm"
             >
-              View API Documentation →
+              Bekijk API-documentatie →
             </a>
           </CardContent>
         </Card>
