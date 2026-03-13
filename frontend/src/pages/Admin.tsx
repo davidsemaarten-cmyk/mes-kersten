@@ -113,7 +113,7 @@ export function Admin() {
             ) : materials && materials.length > 0 ? (
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="h-14">
                     <TableHead>Prefix</TableHead>
                     <TableHead>Materiaalgroep</TableHead>
                     <TableHead>Specificatie</TableHead>
@@ -125,7 +125,7 @@ export function Admin() {
                 </TableHeader>
                 <TableBody>
                   {materials.map((material) => (
-                    <TableRow key={material.id} className="group">
+                    <TableRow key={material.id} className="h-14 group">
                       <TableCell className="font-mono font-medium">
                         {material.plaatcode_prefix}
                       </TableCell>
