@@ -64,11 +64,11 @@ def extract_page_bytes(reader: "PdfReader", page_index: int) -> bytes:
 
 def generate_thumbnail(page_pdf_bytes: bytes, max_px: int = 200) -> str:
     """
-    Render the title-block area of a Tekla drawing page as a base64-encoded PNG.
+    Render the Posnr field of a Tekla drawing page as a base64-encoded PNG.
 
-    Crops to the bottom-right portion of the page (bottom 25%, right 30%) where
-    the title block with the Posnr identifier is located.  This makes the Posnr
-    immediately readable even at small thumbnail sizes (40-64 px in the UI).
+    Crops tightly to the Posnr identifier in the bottom-right title block
+    (approx. x 0.898-0.963, y 0.951-0.989 relative).  The resulting thumbnail
+    shows only the Posnr text, large and readable even at small UI sizes.
 
     Uses PyMuPDF (fitz) for high-quality rasterisation.  The cropped region is
     scaled so its longest dimension equals max_px.
@@ -78,13 +78,16 @@ def generate_thumbnail(page_pdf_bytes: bytes, max_px: int = 200) -> str:
     doc = fitz.open(stream=page_pdf_bytes, filetype="pdf")
     page = doc[0]
 
-    # Crop to bottom-right area where the Tekla title block lives.
+    # Crop tightly around the Posnr field in the Tekla title block.
+    # The Posnr text sits at relative position x: 0.908-0.953, y: 0.956-0.981
+    # across all tested Tekla drawings.  Minimal padding is added to avoid
+    # clipping the text while keeping the crop as tight as possible.
     rect = page.rect
     crop = fitz.Rect(
-        rect.width * 0.70,   # left edge at 70% from left
-        rect.height * 0.75,  # top edge at 75% from top
-        rect.width,          # right edge
-        rect.height,         # bottom edge
+        rect.width * 0.898,   # left edge (posnr x0 ~0.908 minus padding)
+        rect.height * 0.951,  # top edge  (posnr y0 ~0.956 minus padding)
+        rect.width * 0.963,   # right edge (posnr x1 ~0.953 plus padding)
+        rect.height * 0.989,  # bottom edge (posnr y1 ~0.981 plus padding)
     )
 
     scale = max_px / max(crop.width, crop.height)
