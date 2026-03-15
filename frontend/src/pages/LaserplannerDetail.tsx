@@ -1,9 +1,8 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import Layout from '../components/Layout'
+import { Layout } from '../components/Layout'
 import {
   useLaserJob,
-  useUpdateJobStatus,
   useLaserCSVImports,
   useLaserCSVImportDetail,
   useLaserDXFFiles,
@@ -12,7 +11,9 @@ import {
   useCreateManualLineItem,
   useDeleteDXFFile,
   useUploadLinkedDXF,
+  useLaserPDFFiles,
 } from '../hooks/useLaserplanner'
+import { AlmacamExportFlow } from '../components/AlmacamExportFlow'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
@@ -33,13 +34,15 @@ import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import {
-  ArrowLeft, Loader2, Upload, FileImage,
+  ArrowLeft, Loader2, Upload, FileImage, FileText,
   Pencil, Trash2, FileX, Plus,
 } from 'lucide-react'
-import { LaserJobStatus, LaserLineItem, LaserDXFFile } from '../types/database'
+import { LaserLineItem, LaserDXFFile, LaserPDFFile } from '../types/database'
 import { UploadCSVModal } from '../components/UploadCSVModal'
 import { DXFUploadZone } from '../components/DXFUploadZone'
 import { DXFViewerModal } from '../components/DXFViewerModal'
+import { PDFUploadDialog } from '../components/PDFUploadDialog'
+import { PDFViewerModal } from '../components/PDFViewerModal'
 import { cn } from '../lib/utils'
 
 // ============================================================
@@ -249,13 +252,14 @@ export function LaserplannerDetail() {
   const { data: job, isLoading: jobLoading } = useLaserJob(jobId)
   const { data: imports = [] } = useLaserCSVImports(jobId)
   const { data: dxfFiles = [] } = useLaserDXFFiles(jobId)
-  const updateStatus = useUpdateJobStatus()
+  const { data: pdfFiles = [] } = useLaserPDFFiles(jobId)
   const deleteDXF = useDeleteDXFFile()
   const deleteItem = useDeleteLineItem()
   const uploadLinked = useUploadLinkedDXF()
 
   const [uploadCSVOpen, setUploadCSVOpen] = useState(false)
   const [uploadDXFOpen, setUploadDXFOpen] = useState(false)
+  const [uploadPDFOpen, setUploadPDFOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'materiaallijst' | 'origineel'>('materiaallijst')
 
   // CSV version selector
@@ -264,6 +268,9 @@ export function LaserplannerDetail() {
 
   // DXF viewer state
   const [viewingDXF, setViewingDXF] = useState<LaserDXFFile | null>(null)
+
+  // PDF viewer state
+  const [viewingPDF, setViewingPDF] = useState<LaserPDFFile | null>(null)
 
   // Edit / add dialog
   const [editItem, setEditItem] = useState<LaserLineItem | null | 'new'>(null)
@@ -303,6 +310,17 @@ export function LaserplannerDetail() {
     return map
   }, [dxfFiles])
 
+  // PDF map: lowercase posnr_key → PDF file
+  const pdfByPosnr = useMemo(() => {
+    const map: Record<string, LaserPDFFile> = {}
+    for (const pdf of pdfFiles) {
+      if (pdf.posnr_key) {
+        map[pdf.posnr_key.toLowerCase()] = pdf
+      }
+    }
+    return map
+  }, [pdfFiles])
+
   // Sorted items
   const sortedItems = useMemo(() => [...importItems].sort(sortItems), [importItems])
   const plItems = sortedItems.filter((i) => extractDikte(i.profiel) !== null)
@@ -310,15 +328,25 @@ export function LaserplannerDetail() {
 
   // Active import metadata
   const activeImport = imports.find((i) => i.id === activeImportId) ?? null
-  const clientNaam = activeImport?.csv_metadata?.row3 ?? job?.csv_metadata?.row3 ?? '—'
-  const datum = activeImport?.csv_metadata?.row1 ?? job?.csv_metadata?.row1 ?? '—'
+
+  /** Strip trailing empty semicolon-separated fields from CSV metadata values. */
+  function cleanMetadataValue(raw: string | undefined | null, fallback: string): string {
+    if (!raw) return fallback
+    // Split on semicolons, trim each part, filter empty, rejoin
+    const parts = raw.split(';').map(s => s.trim()).filter(Boolean)
+    return parts.length > 0 ? parts.join('; ') : fallback
+  }
+
+  const clientNaam = cleanMetadataValue(
+    activeImport?.csv_metadata?.row3 ?? job?.csv_metadata?.row3,
+    '—'
+  )
+  const datum = cleanMetadataValue(
+    activeImport?.csv_metadata?.row1 ?? job?.csv_metadata?.row1,
+    '—'
+  )
   const projectcode = importItems[0]?.projectcode ?? '—'
   const fasenr = importItems[0]?.fasenr ?? '—'
-
-  const handleStatusChange = (s: string) => {
-    if (!jobId) return
-    updateStatus.mutate({ jobId, status: s })
-  }
 
   const handleDXFUploadClick = useCallback((item: LaserLineItem) => {
     uploadTargetItem.current = item
@@ -336,6 +364,7 @@ export function LaserplannerDetail() {
   // Shared row renderer — memoised to avoid recreation on every render
   const renderRow = useCallback((item: LaserLineItem, dimmed = false) => {
     const dxf = dxfByLineItem[item.id]
+    const linkedPdf = pdfByPosnr[(item.posnr ?? '').toLowerCase().trim()]
     return (
       <TableRow key={item.id} className={cn('group', dimmed && 'opacity-60')}>
         {/* DXF thumbnail */}
@@ -352,6 +381,27 @@ export function LaserplannerDetail() {
             >
               {dxf.original_filename}
             </span>
+          ) : (
+            <span className="text-xs text-muted-foreground/50">—</span>
+          )}
+        </TableCell>
+
+        {/* PDF tekening thumbnail */}
+        <TableCell className="py-1 w-12">
+          {linkedPdf?.thumbnail_png ? (
+            <button
+              type="button"
+              title={`Tekening ${linkedPdf.posnr_key.toUpperCase()} openen`}
+              onClick={() => setViewingPDF(linkedPdf)}
+              className="block rounded border border-border/50 bg-white hover:border-primary hover:shadow-sm transition-all overflow-hidden"
+              style={{ lineHeight: 0 }}
+            >
+              <img
+                src={`data:image/png;base64,${linkedPdf.thumbnail_png}`}
+                alt={linkedPdf.posnr_key}
+                className="w-10 h-10 object-contain"
+              />
+            </button>
           ) : (
             <span className="text-xs text-muted-foreground/50">—</span>
           )}
@@ -379,35 +429,38 @@ export function LaserplannerDetail() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-8 w-8 min-w-[44px] min-h-[44px]"
+              aria-label="Bewerken"
               title="Bewerken"
               onClick={() => setEditItem(item)}
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <Pencil className="h-4 w-4" />
             </Button>
 
             {/* Upload DXF for this row */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-8 w-8 min-w-[44px] min-h-[44px]"
+              aria-label="DXF uploaden voor deze regel"
               title="DXF uploaden voor deze regel"
               disabled={uploadLinked.isPending}
               onClick={() => handleDXFUploadClick(item)}
             >
-              <Upload className="h-3.5 w-3.5" />
+              <Upload className="h-4 w-4" />
             </Button>
 
             {/* Remove linked DXF */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-8 w-8 min-w-[44px] min-h-[44px]"
+              aria-label={dxf ? 'DXF verwijderen' : 'Geen DXF gekoppeld'}
               title={dxf ? 'DXF verwijderen' : 'Geen DXF gekoppeld'}
               disabled={!dxf}
               onClick={() => dxf && setConfirmDeleteDXF({ dxfId: dxf.id })}
             >
-              <FileX className={cn('h-3.5 w-3.5', dxf && 'text-destructive')} />
+              <FileX className={cn('h-4 w-4', dxf && 'text-destructive')} />
             </Button>
 
             {/* Separator */}
@@ -417,17 +470,18 @@ export function LaserplannerDetail() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-destructive hover:text-destructive"
+              className="h-8 w-8 min-w-[44px] min-h-[44px] text-destructive hover:text-destructive"
+              aria-label="Regel verwijderen"
               title="Regel verwijderen"
               onClick={() => setConfirmDeleteItem(item)}
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </TableCell>
       </TableRow>
     )
-  }, [dxfByLineItem, handleDXFUploadClick, uploadLinked.isPending])
+  }, [dxfByLineItem, pdfByPosnr, handleDXFUploadClick, uploadLinked.isPending])
 
   if (jobLoading) {
     return (
@@ -459,11 +513,11 @@ export function LaserplannerDetail() {
         {/* ── Page header ── */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/laserplanner')}>
+            <Button variant="ghost" size="icon" aria-label="Terug" onClick={() => navigate('/laserplanner')}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">{job.naam}</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">{job.naam}</h1>
               {job.beschrijving && (
                 <p className="text-muted-foreground">{job.beschrijving}</p>
               )}
@@ -476,29 +530,25 @@ export function LaserplannerDetail() {
               Upload CSV
             </Button>
             {imports.length > 0 && (
-              <Button onClick={() => setUploadDXFOpen(true)}>
-                <FileImage className="h-4 w-4 mr-2" />
-                Upload DXF
-              </Button>
+              <>
+                <Button variant="outline" onClick={() => setUploadDXFOpen(true)}>
+                  <FileImage className="h-4 w-4 mr-2" />
+                  Upload DXF
+                </Button>
+                <Button onClick={() => setUploadPDFOpen(true)}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Upload tekening PDF
+                </Button>
+              </>
             )}
           </div>
         </div>
 
-        {/* ── Status card ── */}
+        {/* ── Status + Almacam export card ── */}
         <Card>
-          <CardHeader><CardTitle>Status</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Status &amp; Export</CardTitle></CardHeader>
           <CardContent>
-            <Select value={job.status} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-64">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="aangemaakt">Aangemaakt</SelectItem>
-                <SelectItem value="geprogrammeerd">Geprogrammeerd</SelectItem>
-                <SelectItem value="nc_verzonden">NC verzonden</SelectItem>
-                <SelectItem value="gereed">Gereed</SelectItem>
-              </SelectContent>
-            </Select>
+            <AlmacamExportFlow job={job} dxfFiles={dxfFiles ?? []} />
           </CardContent>
         </Card>
 
@@ -581,6 +631,7 @@ export function LaserplannerDetail() {
                             <TableRow>
                               <TableHead className="w-16">DXF</TableHead>
                               <TableHead className="w-40">DXF-bestand</TableHead>
+                              <TableHead className="w-12">Tekening</TableHead>
                               <TableHead className="w-28">Posnr</TableHead>
                               <TableHead className="w-32">Profiel</TableHead>
                               <TableHead className="w-24">Plaatdikte</TableHead>
@@ -598,7 +649,7 @@ export function LaserplannerDetail() {
                               <>
                                 <TableRow>
                                   <TableCell
-                                    colSpan={8}
+                                    colSpan={9}
                                     className="py-2 text-xs text-muted-foreground font-medium bg-muted/40 border-t"
                                   >
                                     Overige profielen (geen laserplaat)
@@ -685,6 +736,26 @@ export function LaserplannerDetail() {
           jobId={job.id}
           dxfId={viewingDXF.id}
           filename={viewingDXF.original_filename}
+        />
+      )}
+
+      {/* PDF tekening upload dialog */}
+      <PDFUploadDialog
+        open={uploadPDFOpen}
+        onClose={() => setUploadPDFOpen(false)}
+        jobId={job.id}
+        jobLineItems={job.line_items ?? []}
+      />
+
+      {/* PDF tekening viewer modal */}
+      {viewingPDF && (
+        <PDFViewerModal
+          open={!!viewingPDF}
+          onClose={() => setViewingPDF(null)}
+          jobId={job.id}
+          pdfId={viewingPDF.id}
+          filename={viewingPDF.original_pdf_filename}
+          posnr={viewingPDF.posnr_key}
         />
       )}
 

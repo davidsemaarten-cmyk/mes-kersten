@@ -1,12 +1,11 @@
-import { useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog'
+import { useState, useRef } from 'react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog'
 import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
 import { Checkbox } from './ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 import { useParseCSV, useAddLineItems } from '../hooks/useLaserplanner'
 import { Loader2, Upload } from 'lucide-react'
+import { cn } from '../lib/utils'
 
 interface UploadCSVModalProps {
   open: boolean
@@ -20,10 +19,12 @@ export function UploadCSVModal({ open, onClose, jobId }: UploadCSVModalProps) {
   const [file, setFile] = useState<File | null>(null)
   const [parsedData, setParsedData] = useState<any>(null)
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
+  const handleFileSelected = async (selectedFile: File | null) => {
     if (!selectedFile) return
+    if (!selectedFile.name.toLowerCase().endsWith('.csv')) return
 
     setFile(selectedFile)
     const result = await parseCSV.mutateAsync(selectedFile)
@@ -32,6 +33,13 @@ export function UploadCSVModal({ open, onClose, jobId }: UploadCSVModalProps) {
     // Select all rows by default
     const allRowNumbers = result.rows.map((r: any) => r.row_number)
     setSelectedRows(new Set(allRowNumbers))
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setDragOver(false)
+    const droppedFile = e.dataTransfer.files[0]
+    handleFileSelected(droppedFile ?? null)
   }
 
   const toggleRow = (rowNumber: number) => {
@@ -85,27 +93,41 @@ export function UploadCSVModal({ open, onClose, jobId }: UploadCSVModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {!parsedData ? (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="csv-file">CSV Bestand</Label>
-              <Input
-                id="csv-file"
+        {!parsedData && !parseCSV.isPending ? (
+          <>
+            <div
+              className={cn(
+                'flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed p-12 cursor-pointer transition-colors',
+                dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+              )}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-10 w-10 text-muted-foreground" />
+              <div className="text-center">
+                <p className="font-medium">Klik of sleep een CSV hierheen</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Verwacht formaat: puntkomma-gescheiden, 4 rijen metadata, header op rij 5
+                </p>
+              </div>
+              <input
+                ref={fileInputRef}
                 type="file"
                 accept=".csv"
-                onChange={handleFileChange}
+                className="hidden"
+                onChange={(e) => handleFileSelected(e.target.files?.[0] ?? null)}
               />
-              <p className="text-sm text-muted-foreground">
-                Verwacht formaat: puntkomma-gescheiden, 4 rijen metadata, header op rij 5
-              </p>
             </div>
-
-            {parseCSV.isPending && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>CSV wordt ingelezen...</span>
-              </div>
-            )}
+            <DialogFooter>
+              <Button variant="ghost" onClick={handleClose}>Sluiten</Button>
+            </DialogFooter>
+          </>
+        ) : !parsedData && parseCSV.isPending ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-16">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">CSV wordt ingelezen...</p>
           </div>
         ) : (
           <div className="space-y-4">
