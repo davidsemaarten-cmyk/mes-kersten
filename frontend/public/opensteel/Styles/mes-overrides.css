@@ -1,0 +1,771 @@
+/* ================================================================
+   MES Kersten — OpenSteel UI overrides
+   Verbergt upload-UI en OpenSteel-branding, en past het kleurensysteem
+   aan zodat het aansluit op de MES Kersten huisstijl.
+   Geen parseer- of renderlogica wordt aangeraakt.
+   ================================================================ */
+
+/* ── 1. Verberg elementen die niet in MES-context thuishoren ── */
+
+/* Navigatiebalk (vervangen door MES header + sidebar) */
+.navbar-fixed { display: none !important; }
+
+/* Drijvende bestandsupload-knop (bestanden worden via MES geladen) */
+.fixed-action-btn { display: none !important; }
+
+/* Tap-target overlay voor de upload-knop */
+.tap-target { display: none !important; }
+
+/* Mobile sidenav (navigatie via MES sidebar) */
+.sidenav { display: none !important; }
+
+/* ── 2. Layout-correcties ── */
+
+/* Verwijder de top-padding die Materialize reserveert voor de vaste navbar */
+body {
+  padding-top: 0 !important;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+main {
+  padding-top: 0 !important;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+main > .row {
+  margin: 0 !important;
+  height: 100%;
+}
+
+/* Kolommen volledig opvullen in hoogte */
+main > .row > [class*="col"] {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* ── 3. Kleurpalette: deep-purple → MES neutrale kleuren ── */
+
+/* Linker bestandspanel */
+#files {
+  background-color: #f9fafb !important; /* gray-50 */
+  border-right: 1px solid #e5e7eb !important;
+  padding: 12px 8px !important;
+}
+
+/* Rechter properties-panel */
+#properties {
+  background-color: #ffffff !important;
+  border-left: 1px solid #e5e7eb !important;
+  padding: 0 !important;
+}
+
+/* Alle deep-purple achtergrondklassen neutraliseren */
+.deep-purple.lighten-2,
+.deep-purple.lighten-3 {
+  background-color: #f9fafb !important;
+}
+
+/* Dieppaars tekst → neutraal grijs */
+.deep-purple-text,
+.deep-purple-text.lighten-3,
+.deep-purple-text.lighten-4,
+a.deep-purple-text {
+  color: #374151 !important; /* gray-700 */
+}
+
+/* Tekstkleur voor witte tekst op nu-lichte achtergrond */
+#files .white-text,
+#files input.white-text,
+#files label.white-text,
+#files p,
+#files .fileTracker,
+#files .filesPlaceHolder {
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* ── 4. Typografie ── */
+
+#files h5, #properties h5 {
+  font-size: 0.6875rem !important;
+  font-weight: 600 !important;
+  color: #9ca3af !important; /* gray-400 */
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  margin: 0.625rem 0 0.125rem 0 !important;
+}
+
+#properties p {
+  font-size: 0.875rem !important;
+  color: #111827 !important; /* gray-900 */
+  margin: 0 !important;
+}
+
+.fileTracker {
+  font-size: 0.6875rem !important;
+  color: #9ca3af !important;
+  margin: 0 0 8px 0 !important;
+}
+
+/* View-titels (O / V / U / H) */
+#oViewTitle, #vViewTitle, #uViewTitle, #hViewTitle {
+  font-size: 0.6875rem !important;
+  font-weight: 500 !important;
+  color: #9ca3af !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  margin: 10px 0 3px 0 !important;
+}
+
+/* ── 5. Tabs (Properties / Hole Info) ── */
+
+.tabs {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.tabs .tab a,
+.tabs .tab a.deep-purple,
+.tabs .tab a.deep-purple.lighten-2 {
+  background-color: transparent !important;
+  color: #6b7280 !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.tabs .tab a:hover {
+  color: #111827 !important;
+  background-color: #f9fafb !important;
+}
+
+.tabs .tab a.active {
+  color: #111827 !important;
+  background-color: transparent !important;
+}
+
+.tabs .indicator {
+  background-color: #111827 !important;
+  height: 2px !important;
+}
+
+/* Tab-content padding */
+.tab-content {
+  padding: 0 !important;
+}
+
+/* Properties rijen */
+#tab1 > div {
+  padding: 5px 12px !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* ── 6. Werkbalk-knoppen (Pan, Measure, Views, Settings, …) ── */
+/* Vervangen door sectie 21 hieronder — zie BUG2-FIX */
+
+/* ── 7. Algemene modal-stijlen ── */
+
+.modal {
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.12) !important;
+}
+
+.modal-content h4 {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: #111827 !important;
+  margin-bottom: 1rem !important;
+}
+
+.modal .btn {
+  border-radius: 5px !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 0.8125rem !important;
+}
+
+.modal .btn.red {
+  background-color: #dc2626 !important;
+}
+
+.modal .btn.green {
+  background-color: #16a34a !important;
+}
+
+/* ── 8. Invoervelden ── */
+
+.input-field input,
+.compact-input {
+  color: #111827 !important;
+  border-bottom-color: #d1d5db !important;
+  font-family: inherit !important;
+}
+
+.input-field input:focus {
+  border-bottom-color: #334155 !important;
+  box-shadow: 0 1px 0 0 #334155 !important;
+}
+
+.input-field label {
+  color: #9ca3af !important;
+  font-size: 0.8125rem !important;
+}
+
+.helper-text {
+  color: #6b7280 !important;
+  font-size: 0.8125rem !important;
+}
+
+/* ── 9. Bestandenlijst (collection items) ── */
+
+.collection-item,
+.collection .collection-item {
+  background-color: transparent !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  color: #374151 !important;
+  font-size: 0.8125rem !important;
+  padding: 8px 12px !important;
+}
+
+.collection-item.active,
+.collection .collection-item.active,
+.collection-item:hover {
+  background-color: #f1f5f9 !important;
+  color: #111827 !important;
+}
+
+/* ── 10. Dropdown-menu's ── */
+
+.dropdown-content {
+  border-radius: 8px !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04) !important;
+}
+
+.dropdown-content li > a,
+.dropdown-content li > span {
+  color: #374151 !important;
+  font-size: 0.875rem !important;
+}
+
+.dropdown-content li > a:hover {
+  background-color: #f9fafb !important;
+}
+
+.dropdown-content .divider {
+  background-color: #e5e7eb !important;
+}
+
+/* ── 11. Canvas-weergave-vlakken ── */
+
+.view.z-depth-3 {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 4px !important;
+  background-color: #ffffff !important;
+}
+
+/* ── 12. Scrollbar ── */
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #94a3b8 !important; /* slate-400 */
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #64748b !important; /* slate-500 */
+}
+
+/* ── 13. Drag-and-drop overlay ── */
+
+body.drag-over::before {
+  background: #1e293b !important; /* slate-800 */
+  border-radius: 8px !important;
+  font-family: system-ui, sans-serif !important;
+  font-size: 0.9375rem !important;
+}
+
+/* ── 14. Select dropdown (Materialize) ── */
+
+.select-wrapper input.select-dropdown {
+  color: #111827 !important;
+  border-bottom-color: #d1d5db !important;
+}
+
+/* ── 15. Hole Info container ── */
+
+#holeInfoContainer {
+  font-size: 0.8125rem !important;
+  color: #374151 !important;
+  padding: 0 12px !important;
+}
+
+/* ── 16. Settings panel items ── */
+
+.settings-item {
+  padding: 8px 12px !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  font-size: 0.8125rem !important;
+  color: #374151 !important;
+}
+
+.settings-item span.deep-purple-text {
+  color: #6b7280 !important;
+}
+
+#saveSettings.deep-purple {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+  border-radius: 0 0 8px 8px !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 0.8125rem !important;
+}
+
+/* ── 17. Bestandenlijst: geselecteerd bestand en verwijderknop ── */
+
+/* BUG-01: Geselecteerd bestand had paarse Materialize achtergrond */
+.viewFiles.selected-file {
+  background-color: #f1f5f9 !important; /* slate-100 */
+  border: 1px solid #e2e8f0 !important; /* slate-200 */
+}
+
+.viewFiles.selected-file p {
+  color: #111827 !important; /* gray-900 — geselecteerd = actief */
+}
+
+/* BUG-02: Verwijderknop gebruikte Materialize-rood en verkeerde border-radius */
+.fileDelete.btn-small {
+  background-color: #dc2626 !important;
+  border-radius: 5px !important;
+  box-shadow: none !important;
+  padding: 0 8px !important;
+}
+
+/* BUG-03: Bestandsnaam tekst had Materialize standaard kleur */
+.viewFiles p {
+  color: #374151 !important; /* gray-700 */
+  font-size: 0.8125rem !important;
+}
+
+/* ── 18. Layout: bestandskolom verbergen + view en properties naast elkaar ── */
+
+/* Verberg bestandskolom — bestanden worden via MES geladen */
+#files {
+  display: none !important;
+}
+
+/* BUG3-FIX: row als flex-container zodat #view en #properties naast elkaar staan */
+main > .row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+}
+
+/* View vult de resterende breedte */
+#view.col.l8 {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  margin-left: 0 !important;
+  min-width: 0 !important;
+  float: none !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+}
+
+/* Properties: vaste breedte rechts naast de views */
+#properties.col.l2 {
+  flex: 0 0 240px !important;
+  width: 240px !important;
+  float: none !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+}
+
+/* Override sectie 2 voor kolom-hoogte — nu geregeld via flex */
+main > .row > [class*="col"] {
+  height: auto !important;
+  overflow-y: visible !important;
+}
+
+#view.col.l8,
+#properties.col.l2 {
+  height: 100% !important;
+  overflow-y: auto !important;
+}
+
+/* ── 19. Viewports: donkere achtergrond (DXF-viewer stijl) ── */
+
+.view.z-depth-3 {
+  background-color: #0f172a !important; /* slate-950 */
+  border: 1px solid #334155 !important; /* slate-700 */
+  box-shadow: none !important;
+}
+
+/* Konva canvas: witte achtergrond + invert zodat zwarte lijnen wit worden op donkere achtergrond */
+.view.z-depth-3 canvas {
+  background-color: #ffffff;
+  filter: invert(1) !important;
+}
+
+/* ── 20. View-koppen in Linear-stijl ── */
+
+/* Verberg de oorspronkelijke uppercase kleine titels */
+#oViewTitle, #vViewTitle, #uViewTitle, #hViewTitle {
+  display: none !important;
+}
+
+/* Nieuwe stijl via .mes-view-title klasse */
+.mes-view-title {
+  font-size: 0.8125rem !important; /* 13px */
+  font-weight: 600 !important;
+  color: #111827 !important; /* gray-900 */
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  margin: 16px 0 6px 0 !important;
+  padding: 0 !important;
+}
+
+/* Eerste view-kop heeft geen top-margin */
+#view > .mes-view-title:first-of-type {
+  margin-top: 8px !important;
+}
+
+/* ── 21. Toolbar knoppen: MES-stijl (BUG2-FIX — vervangt ook sectie 6) ── */
+
+/* Reset alle toolbar knoppen naar wit/outline stijl (identiek aan DXF viewer) */
+#functionButtons .btn-small {
+  background-color: #ffffff !important;
+  color: #6b7280 !important;          /* gray-500 — zelfde als DXF viewer inactive */
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  height: 30px !important;
+  line-height: 30px !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  padding: 0 10px !important;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease !important;
+}
+
+#functionButtons .btn-small i.material-icons {
+  color: #6b7280 !important;
+  font-size: 1rem !important;
+  line-height: inherit !important;
+}
+
+#functionButtons .btn-small:hover {
+  background-color: #f4f4f5 !important;   /* zinc-100 */
+  color: #1f2937 !important;              /* zinc-800 */
+  border-color: #d1d5db !important;
+  box-shadow: none !important;
+}
+
+#functionButtons .btn-small:hover i.material-icons {
+  color: #1f2937 !important;
+}
+
+/* Actieve knop: donker gevuld — identiek aan DXF viewer active (bg-zinc-800) */
+#functionButtons #panTool:not(.lighten-3),
+#functionButtons .btn-small.deep-purple:not(.lighten-3):not(#clearMeasurements):not(#viewsDropDownBtn):not(#settingsDropDownBtn) {
+  background-color: #27272a !important;   /* zinc-800 */
+  color: #ffffff !important;
+  border-color: #27272a !important;
+}
+
+#functionButtons #panTool:not(.lighten-3) i,
+#functionButtons .btn-small.deep-purple:not(.lighten-3):not(#clearMeasurements):not(#viewsDropDownBtn):not(#settingsDropDownBtn) i {
+  color: #ffffff !important;
+}
+
+/* Verwijder-knop (metingen wissen) — outline rood */
+#functionButtons #clearMeasurements {
+  background-color: #ffffff !important;
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
+}
+
+#functionButtons #clearMeasurements i {
+  color: #dc2626 !important;
+}
+
+#functionButtons #clearMeasurements:hover {
+  background-color: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #dc2626 !important;
+}
+
+/* Dropdown-knoppen: zelfde stijl als inactieve knoppen */
+#viewsDropDownBtn,
+#settingsDropDownBtn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  background-color: #ffffff !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+#viewsDropDownBtn i,
+#settingsDropDownBtn i {
+  color: #6b7280 !important;
+}
+
+/* ── 22. Properties panel: tabelstijl (BUG4-FIX) ── */
+
+/* Echte HTML table in #tab1 */
+.properties-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-size: 0.8125rem !important;
+  table-layout: fixed !important;
+}
+
+.properties-table tr {
+  border-bottom: 1px solid #f3f4f6 !important;
+  transition: background-color 150ms ease !important;
+}
+
+.properties-table tr:hover {
+  background-color: #f9fafb !important;
+}
+
+.properties-table th[scope="row"] {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  text-align: left !important;
+  padding: 5px 4px 5px 12px !important;
+  white-space: nowrap !important;
+  width: 42% !important;
+  vertical-align: middle !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.properties-table td {
+  padding: 5px 4px !important;
+  vertical-align: middle !important;
+}
+
+.properties-table td p {
+  font-size: 0.8125rem !important;
+  color: #111827 !important;
+  margin: 0 !important;
+  text-align: right !important;
+}
+
+.properties-table td.prop-unit {
+  width: 36px !important;
+  padding-right: 12px !important;
+  text-align: left !important;
+}
+
+.properties-table td.prop-unit p {
+  color: #9ca3af !important;
+  font-size: 0.75rem !important;
+  text-align: left !important;
+}
+
+/* Fallback: oude div-structuur nog steeds netjes als tabel mislukt */
+#tab1 > div {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  padding: 5px 12px !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+  transition: background-color 150ms ease !important;
+}
+
+#tab1 > div:hover {
+  background-color: #f9fafb !important;
+}
+
+#tab1 > div h5 {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+  min-width: 80px !important;
+  max-width: 100px !important;
+}
+
+#tab1 > div p {
+  font-size: 0.8125rem !important;
+  color: #111827 !important;
+  margin: 0 !important;
+  text-align: right !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#tab1 > div p + p {
+  flex: 0 !important;
+  color: #9ca3af !important;
+  font-size: 0.75rem !important;
+  white-space: nowrap !important;
+}
+
+/* ── "Gat toevoegen" knop (BUG5-FIX gedeeltelijk) ── */
+
+#addHoleBtn {
+  margin: 10px 12px !important;
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  height: 30px !important;
+  line-height: 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+#addHoleBtn:hover {
+  background-color: #f4f4f5 !important;
+  border-color: #d1d5db !important;
+}
+
+#addHoleBtn i {
+  color: #6b7280 !important;
+  font-size: 1rem !important;
+}
+
+/* ── BUG5-FIX: Gatinfo verwijderknop en hole cards ── */
+
+.delHoleBtn,
+.delHoleBtn.btn,
+a.delHoleBtn.btn.red {
+  background-color: #ffffff !important;
+  color: #dc2626 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  height: 30px !important;
+  line-height: 30px !important;
+  padding: 0 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin-top: 6px !important;
+}
+
+.delHoleBtn:hover,
+.delHoleBtn.btn:hover,
+a.delHoleBtn.btn.red:hover {
+  background-color: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  box-shadow: none !important;
+}
+
+.delHoleBtn i.material-icons,
+.delHoleBtn.btn i.material-icons {
+  color: #dc2626 !important;
+  font-size: 1rem !important;
+}
+
+/* Hole cards in MES-stijl */
+#holeInfoContainer .holeCard.card {
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  border: 1px solid #e5e7eb !important;
+  margin: 8px 12px !important;
+}
+
+#holeInfoContainer .holeCard .card-content {
+  padding: 10px 12px !important;
+}
+
+#holeInfoContainer .holeCard .holeInfo {
+  font-size: 0.8125rem !important;
+  color: #374151 !important;
+  margin: 0 0 2px 0 !important;
+}
+
+#holeInfoContainer .holeCard.selected-file {
+  border-color: #334155 !important;
+  background-color: #f8fafc !important;
+}
+
+/* ── 23. Toast meldingen: MES-stijl ── */
+
+/* Overschrijf de Materialize toast positie en stijl */
+.toast-container,
+#toast-container {
+  bottom: auto !important;
+  top: 16px !important;
+  right: 16px !important;
+  left: auto !important;
+}
+
+.toast {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04) !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+  font-size: 0.875rem !important;
+  padding: 12px 16px !important;
+  min-width: 200px !important;
+  max-width: 320px !important;
+}
+
+/* Succes-toast: groene linker rand */
+.toast.toast-success {
+  border-left: 4px solid #16a34a !important;
+  color: #111827 !important;
+}
+
+/* Waarschuwings-toast: oranje linker rand */
+.toast.toast-warning {
+  border-left: 4px solid #f59e0b !important;
+  color: #111827 !important;
+}
+
+/* Fout-toast: rode linker rand */
+.toast.toast-error {
+  border-left: 4px solid #dc2626 !important;
+  color: #111827 !important;
+}
