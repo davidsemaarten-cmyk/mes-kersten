@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from uuid import UUID
 from decimal import Decimal
 
@@ -59,15 +59,24 @@ class JobUpdate(BaseModel):
     fase_id: Optional[UUID] = None
     status: Optional[str] = None
 
+LaserJobStatusType = Literal['concept', 'gereed_voor_almacam', 'geexporteerd']
+
+
 class JobResponse(JobBase):
     id: UUID
-    status: str
+    status: LaserJobStatusType
     csv_metadata: Optional[Dict[str, Any]] = None
     created_by: UUID
     created_at: datetime
     updated_at: datetime
     is_active: bool
     line_item_count: int = 0
+
+    # Almacam export tracking
+    export_date:      Optional[datetime] = None
+    exported_by:      Optional[UUID] = None
+    exported_by_name: Optional[str] = None   # populated by service layer
+    export_count:     int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -168,3 +177,99 @@ class ManualLineItemCreate(BaseModel):
     kwaliteit: Optional[str] = None
     aantal: Optional[int] = None
     opmerkingen: Optional[str] = None
+
+
+# ============================================================
+# PDF FILE SCHEMAS
+# ============================================================
+
+class PDFFileResponse(BaseModel):
+    """PDF drawing record — thumbnail included."""
+    id: UUID
+    laser_job_id: UUID
+    line_item_id: Optional[UUID] = None
+    original_pdf_filename: str
+    page_number: int
+    posnr_key: str
+    thumbnail_png: Optional[str] = None
+    uploaded_by: Optional[UUID] = None
+    uploaded_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PDFPagePreview(BaseModel):
+    """One page from the parse-phase preview (not stored in DB)."""
+    page_number: int
+    extracted_posnr: str
+    thumbnail_png: str
+    match_status: Literal['matched', 'unmatched', 'will_overwrite']
+
+
+class PDFUploadPreviewResponse(BaseModel):
+    """Returned by POST /pdf/parse — client shows this before confirming."""
+    temp_id: str
+    original_filename: str
+    total_pages: int
+    skipped_count: int
+    pages: List[PDFPagePreview]
+
+
+class PDFConfirmedPage(BaseModel):
+    """Single confirmed page sent by the frontend during the confirm step."""
+    page_number: int
+    posnr: str                           # empty string = skip this page
+    thumbnail_png: Optional[str] = None  # base64 PNG from parse phase; re-used to avoid re-rendering
+
+
+class PDFConfirmRequest(BaseModel):
+    """Request body for POST /pdf/confirm."""
+    temp_id: str
+    original_filename: str
+    confirmed_pages: List[PDFConfirmedPage]
+
+
+# ============================================================
+# NC FILE SCHEMAS (DSTV .nc1 from Tekla Structures)
+# ============================================================
+
+class NCFileResponse(BaseModel):
+    """NC file record."""
+    id: UUID
+    laser_job_id: UUID
+    line_item_id: Optional[UUID] = None
+    original_filename: str
+    posnr_key: str
+    uploaded_by: Optional[UUID] = None
+    uploaded_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class NCUploadResult(BaseModel):
+    """Result of a bulk NC upload operation."""
+    matched: List[NCFileResponse]
+    unmatched: List[str]   # original filenames with no matching posnr
+
+
+# ============================================================
+# STEP FILE SCHEMAS (3D CAD .step/.stp files)
+# ============================================================
+
+class StepFileResponse(BaseModel):
+    """STEP file record."""
+    id: UUID
+    laser_job_id: UUID
+    line_item_id: Optional[UUID] = None
+    original_filename: str
+    posnr_key: str
+    uploaded_by: Optional[UUID] = None
+    uploaded_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StepUploadResult(BaseModel):
+    """Result of a bulk STEP upload operation."""
+    matched: List[StepFileResponse]
+    unmatched: List[str]   # original filenames with no matching posnr

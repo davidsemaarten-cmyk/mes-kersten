@@ -31,6 +31,9 @@ class LaserLineItem(Base):
     laser_job = relationship("LaserJob", back_populates="line_items")
     csv_import = relationship("LaserCSVImport", back_populates="line_items")
     dxf_files = relationship("LaserDXFFile", back_populates="line_item")
+    pdf_files = relationship("LaserPDFFile", back_populates="line_item")
+    nc_files = relationship("LaserNCFile", back_populates="line_item")
+    step_files = relationship("LaserStepFile", back_populates="line_item")
 
     def __repr__(self):
         return f"<LaserLineItem {self.posnr} - {self.profiel}>"

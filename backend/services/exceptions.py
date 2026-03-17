@@ -138,6 +138,51 @@ class LaserDXFFileNotFoundError(ServiceError):
     pass
 
 
+class DXFFileMissingFromDiskError(ServiceError):
+    """Raised when file_path is set in the DB but the file is not found on disk"""
+    pass
+
+
+class LaserPDFFileNotFoundError(ServiceError):
+    """Raised when a laser PDF file record is not found"""
+    pass
+
+
+class PDFProcessingError(ServiceError):
+    """Raised when PDF parsing or page extraction fails"""
+    pass
+
+
+class JobNotReadyForExportError(ServiceError):
+    """Raised when a job does not have the required status for Almacam export"""
+    pass
+
+
+class JobHasNoLineItemsError(ServiceError):
+    """Raised when a job has no line items to export"""
+    pass
+
+
+class InvalidStatusTransitionError(ServiceError):
+    """Raised when a manual status transition is not allowed"""
+    pass
+
+
+class LaserNCFileNotFoundError(ServiceError):
+    """Raised when a laser NC file record is not found"""
+    pass
+
+
+class LaserStepFileNotFoundError(ServiceError):
+    """Raised when a laser STEP file record is not found"""
+    pass
+
+
+class NCParseError(ServiceError):
+    """Raised when a DSTV NC1 file cannot be parsed"""
+    pass
+
+
 # =====================================================
 # Future Module Exceptions (Phase 1.2+)
 # =====================================================
