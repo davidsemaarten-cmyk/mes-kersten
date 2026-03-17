@@ -107,14 +107,16 @@ a.deep-purple-text {
   margin: 0 0 8px 0 !important;
 }
 
-/* View-titels (O / V / U / H) */
+/* View-titels (O / V / U / H) — identiek aan LaserplannerDetail job-naam (text-2xl font-semibold tracking-tight) */
 #oViewTitle, #vViewTitle, #uViewTitle, #hViewTitle {
-  font-size: 0.6875rem !important;
-  font-weight: 500 !important;
-  color: #9ca3af !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.06em !important;
-  margin: 10px 0 3px 0 !important;
+  display: block !important;
+  font-size: 1.5rem !important;       /* text-2xl = 24px */
+  font-weight: 600 !important;        /* font-semibold */
+  color: #111827 !important;          /* gray-900 = foreground */
+  text-transform: none !important;
+  letter-spacing: -0.025em !important; /* tracking-tight */
+  margin: 24px 0 8px 0 !important;
+  padding: 0 !important;
 }
 
 /* ── 5. Tabs (Properties / Hole Info) ── */
@@ -430,21 +432,22 @@ main > .row > [class*="col"] {
   filter: invert(1) !important;
 }
 
-/* ── 20. View-koppen in Linear-stijl ── */
+/* ── 20. View-koppen — identiek aan LaserplannerDetail job-naam ── */
 
-/* Nieuwe stijl via .mes-view-title klasse */
+/* .mes-view-title klasse op h2-elementen */
 .mes-view-title {
-  font-size: 1.125rem !important; /* text-lg, 18px */
-  font-weight: 600 !important;
-  color: #111827 !important; /* gray-900 */
+  display: block !important;
+  font-size: 1.5rem !important;        /* text-2xl = 24px */
+  font-weight: 600 !important;         /* font-semibold */
+  color: #111827 !important;           /* gray-900 = foreground */
   text-align: left !important;
   text-transform: none !important;
-  letter-spacing: normal !important;
+  letter-spacing: -0.025em !important; /* tracking-tight */
   margin: 24px 0 8px 0 !important;
   padding: 0 !important;
 }
 
-/* Eerste view-kop heeft geen top-margin */
+/* Eerste view-kop heeft minder top-margin */
 #view > .mes-view-title:first-of-type {
   margin-top: 8px !important;
 }
