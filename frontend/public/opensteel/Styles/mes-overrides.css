@@ -434,12 +434,13 @@ main > .row > [class*="col"] {
 
 /* Nieuwe stijl via .mes-view-title klasse */
 .mes-view-title {
-  font-size: 0.8125rem !important; /* 13px */
+  font-size: 1.125rem !important; /* text-lg, 18px */
   font-weight: 600 !important;
   color: #111827 !important; /* gray-900 */
+  text-align: left !important;
   text-transform: none !important;
   letter-spacing: normal !important;
-  margin: 16px 0 6px 0 !important;
+  margin: 24px 0 8px 0 !important;
   padding: 0 !important;
 }
 
