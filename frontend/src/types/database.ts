@@ -217,7 +217,7 @@ export interface Claim {
   plate_id: string
   project_naam: string
   project_fase: string  // 3-digit string
-  actief: boolean
+  is_active: boolean
   m2_geclaimd?: number
   notes?: string
   claimed_by: string
@@ -237,7 +237,7 @@ export interface ClaimUpdate {
   project_fase?: string
   m2_geclaimd?: number
   notes?: string
-  actief?: boolean
+  is_active?: boolean
 }
 
 export interface ClaimWithPlate extends Claim {
@@ -470,7 +470,7 @@ export interface ProjectStatistics {
 // Laserplanner Types
 // =====================================================
 
-export type LaserJobStatus = 'aangemaakt' | 'geprogrammeerd' | 'nc_verzonden' | 'gereed'
+export type LaserJobStatus = 'concept' | 'gereed_voor_almacam' | 'geexporteerd'
 
 export interface LaserLineItem {
   id: string
@@ -503,6 +503,11 @@ export interface LaserJob {
   updated_at: string
   is_active: boolean
   line_item_count: number
+  // Almacam export tracking
+  export_date:      string | null
+  exported_by:      string | null
+  exported_by_name: string | null
+  export_count:     number
 }
 
 export interface LaserJobWithLineItems extends LaserJob {
@@ -529,7 +534,7 @@ export interface CSVParseResult {
   headers: string[]
   rows: Array<{
     row_number: number
-    [key: string]: any
+    [key: string]: string | number | null
   }>
   raw_content: string
 }
@@ -562,4 +567,117 @@ export interface DXFUploadResult {
 export interface SingleDXFUploadResult {
   dxf: LaserDXFFile
   filename_mismatch: boolean
+}
+
+// =====================================================
+// PDF Drawing File Types
+// =====================================================
+
+export interface LaserPDFFile {
+  id: string
+  laser_job_id: string
+  line_item_id: string | null
+  original_pdf_filename: string
+  page_number: number
+  posnr_key: string
+  thumbnail_png: string | null
+  uploaded_by: string | null
+  uploaded_at: string
+}
+
+export interface PDFPagePreview {
+  page_number: number
+  extracted_posnr: string
+  thumbnail_png: string
+  match_status: 'matched' | 'unmatched' | 'will_overwrite'
+}
+
+export interface PDFUploadPreviewResponse {
+  temp_id: string
+  original_filename: string
+  total_pages: number
+  skipped_count: number
+  pages: PDFPagePreview[]
+}
+
+export interface PDFConfirmRequest {
+  temp_id: string
+  original_filename: string
+  confirmed_pages: { page_number: number; posnr: string; thumbnail_png?: string }[]
+}
+
+// =====================================================
+// NC File Types (DSTV .nc1 from Tekla Structures)
+// =====================================================
+
+export interface LaserNCFile {
+  id: string
+  laser_job_id: string
+  line_item_id: string | null
+  original_filename: string
+  posnr_key: string
+  uploaded_by: string | null
+  uploaded_at: string
+}
+
+export interface NCUploadResult {
+  matched: LaserNCFile[]
+  unmatched: string[]
+}
+
+// =====================================================
+// STEP File Types (3D CAD .step/.stp files)
+// =====================================================
+
+export interface LaserStepFile {
+  id: string
+  laser_job_id: string
+  line_item_id: string | null
+  original_filename: string
+  posnr_key: string
+  uploaded_by: string | null
+  uploaded_at: string
+}
+
+export interface StepUploadResult {
+  matched: LaserStepFile[]
+  unmatched: string[]
+}
+
+export interface NCGeometryPoint {
+  x: number
+  y: number
+}
+
+export interface NCBorehole {
+  x: number
+  y: number
+  diameter: number
+}
+
+export interface NCSlot {
+  x: number
+  y: number
+  length: number
+  width: number
+  angle: number
+}
+
+export interface NCGeometry {
+  header: {
+    name: string
+    order: string
+    quantity: number
+    material: string
+    profile: string
+    project: string
+    length_mm: number
+    width_mm: number
+    thickness_mm: number
+  }
+  outer_contour: NCGeometryPoint[]
+  inner_contours: NCGeometryPoint[][]
+  boreholes: NCBorehole[]
+  slots: NCSlot[]
+  arcs: any[]
 }

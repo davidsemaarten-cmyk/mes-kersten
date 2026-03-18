@@ -12,6 +12,12 @@ import {
   useDeleteDXFFile,
   useUploadLinkedDXF,
   useLaserPDFFiles,
+  useLaserNCFiles,
+  useUploadNCFiles,
+  useDeleteNCFile,
+  useLaserStepFiles,
+  useUploadStepFiles,
+  useDeleteStepFile,
 } from '../hooks/useLaserplanner'
 import { AlmacamExportFlow } from '../components/AlmacamExportFlow'
 import { Button } from '../components/ui/button'
@@ -19,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +41,9 @@ import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import {
   ArrowLeft, Loader2, Upload, FileImage, FileText,
-  Pencil, Trash2, FileX, Plus,
+  Pencil, Trash2, FileX, Plus, Cpu, Box,
 } from 'lucide-react'
-import { LaserLineItem, LaserDXFFile, LaserPDFFile } from '../types/database'
+import { LaserLineItem, LaserDXFFile, LaserPDFFile, LaserNCFile, LaserStepFile } from '../types/database'
 import { UploadCSVModal } from '../components/UploadCSVModal'
 import { DXFUploadZone } from '../components/DXFUploadZone'
 import { DXFViewerModal } from '../components/DXFViewerModal'
@@ -253,13 +259,23 @@ export function LaserplannerDetail() {
   const { data: imports = [] } = useLaserCSVImports(jobId)
   const { data: dxfFiles = [] } = useLaserDXFFiles(jobId)
   const { data: pdfFiles = [] } = useLaserPDFFiles(jobId)
+  const { data: ncFiles = [] } = useLaserNCFiles(jobId)
+  const { data: stepFiles = [] } = useLaserStepFiles(jobId)
   const deleteDXF = useDeleteDXFFile()
   const deleteItem = useDeleteLineItem()
   const uploadLinked = useUploadLinkedDXF()
+  const uploadNC = useUploadNCFiles()
+  const deleteNC = useDeleteNCFile()
+  const uploadStep = useUploadStepFiles()
+  const _deleteStep = useDeleteStepFile()
 
   const [uploadCSVOpen, setUploadCSVOpen] = useState(false)
   const [uploadDXFOpen, setUploadDXFOpen] = useState(false)
   const [uploadPDFOpen, setUploadPDFOpen] = useState(false)
+  const [uploadNCOpen, setUploadNCOpen] = useState(false)
+  const [uploadStepOpen, setUploadStepOpen] = useState(false)
+  const ncFileInputRef = useRef<HTMLInputElement>(null)
+  const stepFileInputRef = useRef<HTMLInputElement>(null)
   const [activeTab, setActiveTab] = useState<'materiaallijst' | 'origineel'>('materiaallijst')
 
   // CSV version selector
@@ -321,6 +337,28 @@ export function LaserplannerDetail() {
     return map
   }, [pdfFiles])
 
+  // NC map: line_item_id → NC file
+  const ncByLineItem = useMemo(() => {
+    const map: Record<string, LaserNCFile> = {}
+    for (const nc of ncFiles) {
+      if (nc.line_item_id && !map[nc.line_item_id]) {
+        map[nc.line_item_id] = nc
+      }
+    }
+    return map
+  }, [ncFiles])
+
+  // STEP map: line_item_id → STEP file
+  const stepByLineItem = useMemo(() => {
+    const map: Record<string, LaserStepFile> = {}
+    for (const step of stepFiles) {
+      if (step.line_item_id && !map[step.line_item_id]) {
+        map[step.line_item_id] = step
+      }
+    }
+    return map
+  }, [stepFiles])
+
   // Sorted items
   const sortedItems = useMemo(() => [...importItems].sort(sortItems), [importItems])
   const plItems = sortedItems.filter((i) => extractDikte(i.profiel) !== null)
@@ -365,6 +403,8 @@ export function LaserplannerDetail() {
   const renderRow = useCallback((item: LaserLineItem, dimmed = false) => {
     const dxf = dxfByLineItem[item.id]
     const linkedPdf = pdfByPosnr[(item.posnr ?? '').toLowerCase().trim()]
+    const nc = ncByLineItem[item.id]
+    const step = stepByLineItem[item.id]
     return (
       <TableRow key={item.id} className={cn('group', dimmed && 'opacity-60')}>
         {/* DXF thumbnail */}
@@ -402,6 +442,50 @@ export function LaserplannerDetail() {
                 className="w-10 h-10 object-contain"
               />
             </button>
+          ) : (
+            <span className="text-xs text-muted-foreground/50">—</span>
+          )}
+        </TableCell>
+
+        {/* NC file indicator */}
+        <TableCell className="py-1 w-12">
+          {nc ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 min-w-[44px] min-h-[44px]"
+              aria-label="NC bestand bekijken in OpenSteel"
+              title="NC bestand bekijken in OpenSteel"
+              onClick={() => {
+                navigate(
+                  `/laserplanner/nc-viewer/${jobId}/${nc.id}?posnr=${encodeURIComponent(nc.posnr_key)}&file=${encodeURIComponent(nc.original_filename)}`
+                )
+              }}
+            >
+              <Cpu className="h-4 w-4 text-blue-600" />
+            </Button>
+          ) : (
+            <span className="text-xs text-muted-foreground/50">—</span>
+          )}
+        </TableCell>
+
+        {/* STEP file indicator */}
+        <TableCell className="py-1 w-12">
+          {step ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 min-w-[44px] min-h-[44px]"
+              aria-label="STEP bestand bekijken in 3D viewer"
+              title="STEP bestand bekijken in 3D viewer"
+              onClick={() => {
+                navigate(
+                  `/laserplanner/step-viewer/${jobId}/${step.id}?posnr=${encodeURIComponent(step.posnr_key)}&file=${encodeURIComponent(step.original_filename)}`
+                )
+              }}
+            >
+              <Box className="h-4 w-4 text-purple-600" />
+            </Button>
           ) : (
             <span className="text-xs text-muted-foreground/50">—</span>
           )}
@@ -481,7 +565,7 @@ export function LaserplannerDetail() {
         </TableCell>
       </TableRow>
     )
-  }, [dxfByLineItem, pdfByPosnr, handleDXFUploadClick, uploadLinked.isPending])
+  }, [dxfByLineItem, pdfByPosnr, ncByLineItem, stepByLineItem, handleDXFUploadClick, uploadLinked.isPending, navigate, jobId])
 
   if (jobLoading) {
     return (
@@ -538,6 +622,14 @@ export function LaserplannerDetail() {
                 <Button onClick={() => setUploadPDFOpen(true)}>
                   <FileText className="h-4 w-4 mr-2" />
                   Upload tekening PDF
+                </Button>
+                <Button variant="outline" onClick={() => setUploadNCOpen(true)}>
+                  <Cpu className="h-4 w-4 mr-2" />
+                  Upload NC
+                </Button>
+                <Button variant="outline" onClick={() => setUploadStepOpen(true)}>
+                  <Box className="h-4 w-4 mr-2" />
+                  Upload STEP
                 </Button>
               </>
             )}
@@ -632,6 +724,8 @@ export function LaserplannerDetail() {
                               <TableHead className="w-16">DXF</TableHead>
                               <TableHead className="w-40">DXF-bestand</TableHead>
                               <TableHead className="w-12">Tekening</TableHead>
+                              <TableHead className="w-12">NC</TableHead>
+                              <TableHead className="w-12">STEP</TableHead>
                               <TableHead className="w-28">Posnr</TableHead>
                               <TableHead className="w-32">Profiel</TableHead>
                               <TableHead className="w-24">Plaatdikte</TableHead>
@@ -649,7 +743,7 @@ export function LaserplannerDetail() {
                               <>
                                 <TableRow>
                                   <TableCell
-                                    colSpan={9}
+                                    colSpan={11}
                                     className="py-2 text-xs text-muted-foreground font-medium bg-muted/40 border-t"
                                   >
                                     Overige profielen (geen laserplaat)
@@ -758,6 +852,97 @@ export function LaserplannerDetail() {
           posnr={viewingPDF.posnr_key}
         />
       )}
+
+      {/* NC bulk upload dialog */}
+      <Dialog open={uploadNCOpen} onOpenChange={(o) => !o && setUploadNCOpen(false)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>NC Bestanden Uploaden</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground -mt-2">
+            Upload .nc1 bestanden (DSTV formaat uit Tekla Structures). Bestanden worden automatisch gekoppeld op basis van bestandsnaam = Posnr.
+          </p>
+          <div className="space-y-4">
+            <div
+              className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+              onClick={() => ncFileInputRef.current?.click()}
+            >
+              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Klik om .nc1 bestanden te selecteren
+              </p>
+            </div>
+            <input
+              ref={ncFileInputRef}
+              type="file"
+              accept=".nc1,.nc"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? [])
+                if (files.length === 0 || !jobId) return
+                uploadNC.mutate(
+                  { jobId, files },
+                  { onSuccess: () => setUploadNCOpen(false) }
+                )
+                e.target.value = ''
+              }}
+            />
+            {uploadNC.isPending && (
+              <div className="flex items-center justify-center gap-2 py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Uploaden...</span>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* STEP bulk upload dialog */}
+      <Dialog open={uploadStepOpen} onOpenChange={(o) => !o && setUploadStepOpen(false)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>STEP Bestanden Uploaden</DialogTitle>
+            <DialogDescription className="sr-only">Upload STEP bestanden voor deze laserjob</DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground -mt-2">
+            Upload .step of .stp bestanden (3D CAD). Bestanden worden automatisch gekoppeld op basis van bestandsnaam = Posnr.
+          </p>
+          <div className="space-y-4">
+            <div
+              className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+              onClick={() => stepFileInputRef.current?.click()}
+            >
+              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Klik om .step of .stp bestanden te selecteren
+              </p>
+            </div>
+            <input
+              ref={stepFileInputRef}
+              type="file"
+              accept=".step,.stp"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? [])
+                if (files.length === 0 || !jobId) return
+                uploadStep.mutate(
+                  { jobId, files },
+                  { onSuccess: () => setUploadStepOpen(false) }
+                )
+                e.target.value = ''
+              }}
+            />
+            {uploadStep.isPending && (
+              <div className="flex items-center justify-center gap-2 py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Uploaden...</span>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Line item edit / add dialog */}
       <LineItemDialog

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../lib/api'
 import { toast } from 'sonner'
-import { LaserJob, LaserJobWithLineItems, LaserLineItem, CSVParseResult, LaserCSVImport, LaserCSVImportDetail, LaserDXFFile, LaserDXFFileDetail, DXFUploadResult, SingleDXFUploadResult } from '../types/database'
+import { LaserJob, LaserJobWithLineItems, LaserLineItem, CSVParseResult, LaserCSVImport, LaserCSVImportDetail, LaserDXFFile, LaserDXFFileDetail, DXFUploadResult, SingleDXFUploadResult, LaserPDFFile, PDFUploadPreviewResponse, PDFConfirmRequest, LaserNCFile, NCUploadResult, LaserStepFile, StepUploadResult } from '../types/database'
 
 // ============================================================
 // QUERY HOOKS
@@ -17,7 +17,8 @@ export function useLaserJobs(statusFilter?: string) {
         `/api/laserplanner/jobs?${params.toString()}`
       )
       return response.data
-    }
+    },
+    staleTime: 30_000, // 30s — status-gevoelige data
   })
 }
 
@@ -45,7 +46,8 @@ export function useLaserCSVImports(jobId: string | undefined) {
       )
       return response.data
     },
-    enabled: !!jobId
+    enabled: !!jobId,
+    staleTime: 30_000, // 30s — status-gevoelige data
   })
 }
 
@@ -212,7 +214,8 @@ export function useLaserDXFFiles(jobId: string | undefined) {
       )
       return response.data
     },
-    enabled: !!jobId
+    enabled: !!jobId,
+    staleTime: 30_000, // 30s — status-gevoelige data
   })
 }
 
@@ -397,5 +400,260 @@ export function useUploadDXFFiles() {
       const message = error.response?.data?.detail || 'Fout bij uploaden DXF'
       toast.error(message)
     }
+  })
+}
+
+// ============================================================
+// PDF DRAWING FILE HOOKS
+// ============================================================
+
+export function useLaserPDFFiles(jobId: string | undefined) {
+  return useQuery({
+    queryKey: ['laser-pdf-files', jobId],
+    queryFn: async () => {
+      if (!jobId) return []
+      const response = await api.get<LaserPDFFile[]>(
+        `/api/laserplanner/jobs/${jobId}/pdf`
+      )
+      return response.data
+    },
+    enabled: !!jobId,
+    staleTime: 30_000, // 30s — status-gevoelige data
+  })
+}
+
+export function useUploadPDF(jobId: string) {
+  return useMutation({
+    mutationFn: async ({ file }: { file: File }) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await api.post<PDFUploadPreviewResponse>(
+        `/api/laserplanner/jobs/${jobId}/pdf/parse`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 180_000,  // 3 minutes — large multi-page PDFs can take a while
+        }
+      )
+      return response.data
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Fout bij verwerken PDF'
+      toast.error(message)
+    },
+  })
+}
+
+export function useConfirmPDF(jobId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (body: PDFConfirmRequest) => {
+      const response = await api.post<LaserPDFFile[]>(
+        `/api/laserplanner/jobs/${jobId}/pdf/confirm`,
+        body
+      )
+      return response.data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['laser-pdf-files', jobId] })
+      toast.success(`${data.length} tekening${data.length !== 1 ? 'en' : ''} opgeslagen`)
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Fout bij opslaan tekeningen'
+      toast.error(message)
+    },
+  })
+}
+
+export function useDeletePDFFile(jobId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (pdfId: string) => {
+      await api.delete(`/api/laserplanner/jobs/${jobId}/pdf/${pdfId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['laser-pdf-files', jobId] })
+      toast.success('Tekening verwijderd')
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Fout bij verwijderen tekening'
+      toast.error(message)
+    },
+  })
+}
+
+// ============================================================
+// ALMACAM EXPORT
+// ============================================================
+
+export function useExportAlmacam(jobId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const response = await api.get(
+        `/api/laserplanner/jobs/${jobId}/export/almacam`,
+        { responseType: 'blob' }
+      )
+      // Extract filename from Content-Disposition header
+      const cd: string = response.headers['content-disposition'] ?? ''
+      const match = cd.match(/filename="?([^";\r\n]+)"?/)
+      const filename = match?.[1]?.trim() ?? `almacam_${jobId}.zip`
+      // Trigger browser download
+      const url = URL.createObjectURL(
+        new Blob([response.data as BlobPart], { type: 'application/zip' })
+      )
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      return response
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['laser-job', jobId] })
+      queryClient.invalidateQueries({ queryKey: ['laser-jobs'] })
+      toast.success('ZIP gedownload met CSV en DXF-bestanden. Importeer in Almacam.')
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Fout bij exporteren naar Almacam'
+      toast.error(message)
+    },
+  })
+}
+
+/** @deprecated Use useExportAlmacam instead */
+export const useExportAlmacamCSV = useExportAlmacam
+
+// ============================================================
+// NC FILE HOOKS (DSTV .nc1)
+// ============================================================
+
+export function useLaserNCFiles(jobId: string | undefined) {
+  return useQuery({
+    queryKey: ['laser-nc-files', jobId],
+    queryFn: async () => {
+      if (!jobId) return []
+      const response = await api.get<LaserNCFile[]>(
+        `/api/laserplanner/jobs/${jobId}/nc`
+      )
+      return response.data
+    },
+    enabled: !!jobId,
+    staleTime: 30_000,
+  })
+}
+
+export function useUploadNCFiles() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ jobId, files }: { jobId: string; files: File[] }) => {
+      const formData = new FormData()
+      files.forEach((f) => formData.append('files', f))
+      const response = await api.post<NCUploadResult>(
+        `/api/laserplanner/jobs/${jobId}/nc/upload`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
+      return response.data
+    },
+    onSuccess: (result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['laser-nc-files', variables.jobId] })
+      const m = result.matched.length
+      const u = result.unmatched.length
+      if (m > 0 && u === 0) {
+        toast.success(`${m} NC ${m === 1 ? 'bestand' : 'bestanden'} gekoppeld`)
+      } else if (m > 0 && u > 0) {
+        toast.success(`${m} gekoppeld, ${u} niet herkend: ${result.unmatched.join(', ')}`)
+      } else {
+        toast.warning(`Geen bestanden herkend: ${result.unmatched.join(', ')}`)
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Fout bij uploaden NC bestanden')
+    },
+  })
+}
+
+export function useDeleteNCFile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ jobId, ncId }: { jobId: string; ncId: string }) => {
+      await api.delete(`/api/laserplanner/jobs/${jobId}/nc/${ncId}`)
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['laser-nc-files', variables.jobId] })
+      toast.success('NC bestand verwijderd')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Fout bij verwijderen NC bestand')
+    },
+  })
+}
+
+// ============================================================
+// STEP FILE HOOKS (3D CAD .step/.stp)
+// ============================================================
+
+export function useLaserStepFiles(jobId: string | undefined) {
+  return useQuery({
+    queryKey: ['laser-step-files', jobId],
+    queryFn: async () => {
+      if (!jobId) return []
+      const response = await api.get<LaserStepFile[]>(
+        `/api/laserplanner/jobs/${jobId}/step`
+      )
+      return response.data
+    },
+    enabled: !!jobId,
+    staleTime: 30_000,
+  })
+}
+
+export function useUploadStepFiles() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ jobId, files }: { jobId: string; files: File[] }) => {
+      const formData = new FormData()
+      files.forEach((f) => formData.append('files', f))
+      const response = await api.post<StepUploadResult>(
+        `/api/laserplanner/jobs/${jobId}/step/upload`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
+      return response.data
+    },
+    onSuccess: (result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['laser-step-files', variables.jobId] })
+      const m = result.matched.length
+      const u = result.unmatched.length
+      if (m > 0 && u === 0) {
+        toast.success(`${m} STEP ${m === 1 ? 'bestand' : 'bestanden'} gekoppeld`)
+      } else if (m > 0 && u > 0) {
+        toast.success(`${m} gekoppeld, ${u} niet herkend: ${result.unmatched.join(', ')}`)
+      } else {
+        toast.warning(`Geen bestanden herkend: ${result.unmatched.join(', ')}`)
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Fout bij uploaden STEP bestanden')
+    },
+  })
+}
+
+export function useDeleteStepFile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ jobId, stepId }: { jobId: string; stepId: string }) => {
+      await api.delete(`/api/laserplanner/jobs/${jobId}/step/${stepId}`)
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['laser-step-files', variables.jobId] })
+      toast.success('STEP bestand verwijderd')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Fout bij verwijderen STEP bestand')
+    },
   })
 }
