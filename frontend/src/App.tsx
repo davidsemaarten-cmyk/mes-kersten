@@ -2,9 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { AuthProvider } from './hooks/useAuth'
-import ProtectedRoute from './components/ProtectedRoute'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { Login } from './pages/Login'
+import { Dashboard } from './pages/Dashboard'
 import { Voorraad } from './pages/Voorraad'
 import { Claims } from './pages/Claims'
 import { Admin } from './pages/Admin'
@@ -15,6 +15,8 @@ import { Profile } from './pages/Profile'
 import { StorageLocations } from './pages/StorageLocations'
 import { Laserplanner } from './pages/Laserplanner'
 import { LaserplannerDetail } from './pages/LaserplannerDetail'
+import { NCViewerPage } from './pages/NCViewerPage'
+import { StepViewerPage } from './pages/StepViewerPage'
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -22,7 +24,7 @@ const queryClient = new QueryClient({
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 60_000, // 60 seconds
     },
   },
 })
@@ -53,6 +55,8 @@ function App() {
 
             {/* Laserplanner Routes */}
             <Route path="/laserplanner" element={<ProtectedRoute><Laserplanner /></ProtectedRoute>} />
+            <Route path="/laserplanner/nc-viewer/:jobId/:ncId" element={<ProtectedRoute><NCViewerPage /></ProtectedRoute>} />
+            <Route path="/laserplanner/step-viewer/:jobId/:stepId" element={<ProtectedRoute><StepViewerPage /></ProtectedRoute>} />
             <Route path="/laserplanner/:jobId" element={<ProtectedRoute><LaserplannerDetail /></ProtectedRoute>} />
 
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
@@ -67,4 +71,4 @@ function App() {
   )
 }
 
-export default App
+export { App }
