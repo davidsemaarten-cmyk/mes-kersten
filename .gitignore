@@ -25,6 +25,7 @@ wheels/
 
 # Node
 node_modules/
+frontend/public/occt-import-js.wasm
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

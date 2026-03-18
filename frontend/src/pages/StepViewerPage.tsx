@@ -36,8 +36,17 @@ export function StepViewerPage() {
         const buffer: ArrayBuffer = response.data
 
         // Dynamically load occt-import-js (WASM — lazy to avoid blocking initial load)
+        // locateFile overrides the default relative-path fetch so Vite serves
+        // the wasm from /public with the correct MIME type at any route depth.
         const occtModule = await import('occt-import-js')
-        const occt = await occtModule.default()
+        const occt = await occtModule.default({
+          locateFile: (name: string) => {
+            if (name.endsWith('.wasm')) {
+              return '/occt-import-js.wasm'
+            }
+            return name
+          }
+        })
 
         const result = occt.ReadStepFile(new Uint8Array(buffer), null)
 
