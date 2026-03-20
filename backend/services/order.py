@@ -93,8 +93,8 @@ class OrderService:
         log_action(
             db=db,
             user_id=current_user.id,
-            action=AuditAction.CREATE_PROJECT,  # Using CREATE_PROJECT for now
-            entity_type=EntityType.PROJECT,  # Will be EntityType.ORDERREEKS in Phase 2
+            action=AuditAction.CREATE_ORDER,
+            entity_type=EntityType.ORDERREEKS,
             entity_id=orderreeks.id,
             details={
                 "title": orderreeks.title,
@@ -169,18 +169,18 @@ class OrderService:
         if status is not None:
             orderreeks.status = status
 
-        db.flush()
-
         if current_user:
             log_action(
                 db=db,
                 user_id=current_user.id,
-                action=AuditAction.UPDATE_PROJECT,
-                entity_type=EntityType.PROJECT,
+                action=AuditAction.UPDATE_ORDER,
+                entity_type=EntityType.ORDERREEKS,
                 entity_id=orderreeks.id,
                 details={"title": orderreeks.title, "status": orderreeks.status}
             )
 
+        db.commit()
+        db.refresh(orderreeks)
         return orderreeks
 
     @staticmethod
@@ -208,17 +208,17 @@ class OrderService:
             raise ValueError("Orderreeks not found")
 
         orderreeks.is_active = False
-        db.flush()
 
         log_action(
             db=db,
             user_id=current_user.id,
-            action=AuditAction.DELETE_PROJECT,
-            entity_type=EntityType.PROJECT,
+            action=AuditAction.DELETE_ORDER,
+            entity_type=EntityType.ORDERREEKS,
             entity_id=orderreeks.id,
             details={"title": orderreeks.title}
         )
 
+        db.commit()
         return True
 
     @staticmethod
@@ -318,17 +318,18 @@ class OrderService:
             raise ValueError("Order not found")
 
         order.assigned_to = user_id
-        db.flush()
 
         log_action(
             db=db,
             user_id=current_user.id,
-            action=AuditAction.UPDATE_PROJECT,
-            entity_type=EntityType.PROJECT,
+            action=AuditAction.UPDATE_ORDER,
+            entity_type=EntityType.ORDER,
             entity_id=order.id,
             details={"assigned_to": str(user_id)}
         )
 
+        db.commit()
+        db.refresh(order)
         return order
 
     @staticmethod
@@ -375,15 +376,14 @@ class OrderService:
                 )
                 db.add(link)
 
-        db.flush()
-
         log_action(
             db=db,
             user_id=current_user.id,
-            action=AuditAction.UPDATE_PROJECT,
-            entity_type=EntityType.PROJECT,
+            action=AuditAction.UPDATE_ORDER,
+            entity_type=EntityType.ORDER,
             entity_id=order_id,
             details={"linked_posnummers": len(posnummer_ids)}
         )
 
+        db.commit()
         return True

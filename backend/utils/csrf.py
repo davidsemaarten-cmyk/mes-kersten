@@ -26,7 +26,7 @@ Security Pattern (when activated):
 import hmac
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Request, HTTPException, status, Response
 from config import settings
@@ -57,7 +57,7 @@ def sign_csrf_token(token: str) -> str:
         Signed token (format: timestamp:token:signature)
     """
     # Add timestamp for expiration check
-    timestamp = str(int(datetime.utcnow().timestamp()))
+    timestamp = str(int(datetime.now(timezone.utc).timestamp()))
 
     # Create HMAC signature
     message = f"{timestamp}:{token}"
@@ -100,7 +100,7 @@ def verify_csrf_token(signed_token: str) -> bool:
 
         # Check expiration
         timestamp = int(timestamp_str)
-        token_age = datetime.utcnow().timestamp() - timestamp
+        token_age = datetime.now(timezone.utc).timestamp() - timestamp
         max_age = CSRF_TOKEN_EXPIRE_HOURS * 3600  # Convert to seconds
 
         if token_age > max_age:

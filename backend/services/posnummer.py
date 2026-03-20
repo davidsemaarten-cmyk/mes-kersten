@@ -21,6 +21,7 @@ from services.exceptions import (
     FaseNotFoundError,
     DuplicatePosnummerError
 )
+from utils.audit import log_action, AuditAction, EntityType
 
 
 def create_posnummer(
@@ -79,9 +80,9 @@ def create_posnummer(
         db.add(posnummer)
         db.flush()  # Get ID without committing
 
-        # Audit logging would go here
-        # log_action(db, user_id, AuditAction.CREATE_POSNUMMER,
-        #            EntityType.POSNUMMER, posnummer.id)
+        log_action(db, user_id, AuditAction.CREATE_ORDER,
+                   EntityType.POSNUMMER, posnummer.id,
+                   details={"posnr": posnummer.posnr, "fase_id": str(fase_id)})
 
         db.commit()
         db.refresh(posnummer)
@@ -196,9 +197,9 @@ def update_posnummer(
     try:
         db.flush()
 
-        # Audit logging would go here
-        # log_action(db, user_id, AuditAction.UPDATE_POSNUMMER,
-        #            EntityType.POSNUMMER, posnummer.id)
+        log_action(db, user_id, AuditAction.UPDATE_ORDER,
+                   EntityType.POSNUMMER, posnummer.id,
+                   details={"posnr": posnummer.posnr})
 
         db.commit()
         db.refresh(posnummer)
@@ -234,11 +235,9 @@ def delete_posnummer(
 
     posnummer.is_active = False
 
-    db.flush()
-
-    # Audit logging would go here
-    # log_action(db, user_id, AuditAction.DELETE_POSNUMMER,
-    #            EntityType.POSNUMMER, posnummer.id)
+    log_action(db, user_id, AuditAction.DELETE_ORDER,
+               EntityType.POSNUMMER, posnummer.id,
+               details={"posnr": posnummer.posnr})
 
     db.commit()
     return True
