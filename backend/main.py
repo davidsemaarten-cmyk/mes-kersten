@@ -17,51 +17,58 @@ import uvicorn
 import logging
 
 # Import routers
-from api import auth, platestock, projects, order_types, orders, posnummers, storage_locations, laserplanner
+from api import auth, platestock, projects, order_types, orders, posnummers, laserplanner
 from database import get_db
 from config import settings
 
-# Configure logging with rotation
+# Configure logging
 import sys
-from logging.handlers import RotatingFileHandler
 from pathlib import Path
-
-# Create logs directory if it doesn't exist
-logs_dir = Path("logs")
-logs_dir.mkdir(exist_ok=True)
 
 # Configure structured logging
 log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(filename)s:%(lineno)d]'
 
-# Console handler
+# Console handler (always active)
 console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(logging.Formatter(log_format))
 
-# File handler with rotation (10MB per file, keep 5 backups)
-file_handler = RotatingFileHandler(
-    logs_dir / "mes_kersten.log",
-    maxBytes=10 * 1024 * 1024,  # 10MB
-    backupCount=5,
-    encoding='utf-8'
-)
-file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(logging.Formatter(log_format))
+handlers = [console_handler]
 
-# Error file handler (separate log for errors)
-error_handler = RotatingFileHandler(
-    logs_dir / "mes_kersten_errors.log",
-    maxBytes=10 * 1024 * 1024,  # 10MB
-    backupCount=5,
-    encoding='utf-8'
-)
-error_handler.setLevel(logging.ERROR)
-error_handler.setFormatter(logging.Formatter(log_format))
+# File handlers only in production — writing log files during development
+# triggers uvicorn's file watcher and causes an infinite restart loop.
+if not settings.DEBUG:
+    from logging.handlers import RotatingFileHandler
+
+    logs_dir = Path("logs")
+    logs_dir.mkdir(exist_ok=True)
+
+    # File handler with rotation (10MB per file, keep 5 backups)
+    file_handler = RotatingFileHandler(
+        logs_dir / "mes_kersten.log",
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5,
+        encoding='utf-8'
+    )
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter(log_format))
+
+    # Error file handler (separate log for errors)
+    error_handler = RotatingFileHandler(
+        logs_dir / "mes_kersten_errors.log",
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5,
+        encoding='utf-8'
+    )
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(logging.Formatter(log_format))
+
+    handlers.extend([file_handler, error_handler])
 
 # Configure root logger
 logging.basicConfig(
     level=logging.INFO,
-    handlers=[console_handler, file_handler, error_handler]
+    handlers=handlers
 )
 
 logger = logging.getLogger(__name__)
@@ -257,7 +264,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(platestock.router, prefix="/api/platestock", tags=["PlateStock"])
 app.include_router(projects.router, prefix="/api", tags=["Projects"])
-app.include_router(storage_locations.router, prefix="/api/storage-locations", tags=["Storage Locations"])
+app.include_router(platestock.storage_locations_router, prefix="/api/storage-locations", tags=["Storage Locations"])
 app.include_router(order_types.router, prefix="/api/order-types", tags=["Order Types"])
 app.include_router(orders.router, prefix="/api", tags=["Orders"])
 app.include_router(posnummers.router, prefix="/api", tags=["Posnummers"])

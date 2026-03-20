@@ -293,14 +293,14 @@ class ClaimUpdate(BaseModel):
     project_fase: Optional[str] = Field(None, pattern=r"^\d{3}$")
     m2_geclaimd: Optional[Decimal] = Field(None, gt=0)
     notes: Optional[str] = None
-    actief: Optional[bool] = None
+    is_active: Optional[bool] = None
 
 
 class ClaimResponse(ClaimBase):
     """Schema for claim response"""
     id: UUID
     plate_id: UUID
-    actief: bool
+    is_active: bool
     claimed_by: UUID
     claimed_at: datetime
     project_number: Optional[str] = None  # DEPRECATED
@@ -379,6 +379,49 @@ class ProjectsStatsResponse(BaseModel):
     active_projects: int
     total_claimed_m2: Decimal
     projects: List[ProjectStats]
+
+
+# ============================================================
+# STORAGE LOCATION SCHEMAS
+# ============================================================
+
+class StorageLocationBase(BaseModel):
+    """Base schema with common fields"""
+    naam: str = Field(..., min_length=1, max_length=100, description="Unique location name")
+    beschrijving: Optional[str] = Field(None, description="Optional description of the location")
+
+
+class StorageLocationCreate(StorageLocationBase):
+    """Schema for creating a new storage location"""
+    pass
+
+
+class StorageLocationUpdate(BaseModel):
+    """Schema for updating a storage location - all fields optional"""
+    naam: Optional[str] = Field(None, min_length=1, max_length=100)
+    beschrijving: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class StorageLocationResponse(StorageLocationBase):
+    """Schema for storage location in responses"""
+    id: UUID
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer('id')
+    def serialize_id(self, value: UUID) -> str:
+        """Convert UUID to string for JSON serialization"""
+        return str(value)
+
+
+class StorageLocationList(BaseModel):
+    """Schema for list of storage locations"""
+    items: list[StorageLocationResponse]
+    total: int
 
 
 # Update forward references

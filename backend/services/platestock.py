@@ -22,6 +22,7 @@ import time
 from models.material import Material
 from models.plate import Plate
 from models.claim import Claim
+from models.storage_location import StorageLocation
 from services.exceptions import (
     PlateNotFoundError,
     MaterialNotFoundError,
@@ -1459,3 +1460,158 @@ class PlateStockService:
             'total_claimed_m2': total_claimed_m2,
             'projects': project_list
         }
+
+
+# ============================================================
+# STORAGE LOCATION SERVICE
+# ============================================================
+
+class StorageLocationService:
+    """Business logic for storage location operations"""
+
+    @staticmethod
+    def list_locations(
+        db: Session,
+        include_inactive: bool = False
+    ) -> List[StorageLocation]:
+        """List storage locations, optionally including inactive ones"""
+        query = db.query(StorageLocation)
+        if not include_inactive:
+            query = query.filter(StorageLocation.is_active == True)
+        return query.order_by(StorageLocation.naam).all()
+
+    @staticmethod
+    def get_location(db: Session, location_id: UUID) -> Optional[StorageLocation]:
+        """Get a single storage location by ID"""
+        return db.query(StorageLocation).filter(
+            StorageLocation.id == location_id
+        ).first()
+
+    @staticmethod
+    def create_location(
+        db: Session,
+        naam: str,
+        beschrijving: Optional[str],
+        current_user
+    ) -> StorageLocation:
+        """
+        Create a new storage location.
+
+        Raises:
+            ValueError: If location name already exists
+        """
+        # Check for duplicate name (case-insensitive)
+        existing = db.query(StorageLocation).filter(
+            func.lower(StorageLocation.naam) == func.lower(naam)
+        ).first()
+        if existing:
+            raise ValueError(f"Opslaglocatie met naam '{naam}' bestaat al")
+
+        location = StorageLocation(
+            naam=naam.strip(),
+            beschrijving=beschrijving.strip() if beschrijving else None,
+            is_active=True
+        )
+
+        db.add(location)
+        db.flush()
+
+        log_action(
+            db=db,
+            user_id=current_user.id,
+            action=AuditAction.CREATE_STORAGE_LOCATION,
+            entity_type=EntityType.STORAGE_LOCATION,
+            entity_id=location.id,
+            details={"naam": location.naam}
+        )
+
+        db.commit()
+        db.refresh(location)
+        return location
+
+    @staticmethod
+    def update_location(
+        db: Session,
+        location_id: UUID,
+        naam: Optional[str],
+        beschrijving: Optional[str],
+        is_active: Optional[bool],
+        current_user
+    ) -> StorageLocation:
+        """
+        Update a storage location.
+
+        Raises:
+            ValueError: If new name already exists
+            LookupError: If location not found
+        """
+        location = db.query(StorageLocation).filter(
+            StorageLocation.id == location_id
+        ).first()
+        if not location:
+            raise LookupError(f"Opslaglocatie met ID {location_id} niet gevonden")
+
+        changes = {}
+
+        if naam is not None and naam.strip() != location.naam:
+            # Check for duplicate name
+            existing = db.query(StorageLocation).filter(
+                func.lower(StorageLocation.naam) == func.lower(naam),
+                StorageLocation.id != location_id
+            ).first()
+            if existing:
+                raise ValueError(f"Opslaglocatie met naam '{naam}' bestaat al")
+            changes['naam'] = {'old': location.naam, 'new': naam.strip()}
+            location.naam = naam.strip()
+
+        if beschrijving is not None:
+            changes['beschrijving'] = {'old': location.beschrijving, 'new': beschrijving}
+            location.beschrijving = beschrijving.strip() if beschrijving else None
+
+        if is_active is not None:
+            changes['is_active'] = {'old': location.is_active, 'new': is_active}
+            location.is_active = is_active
+
+        log_action(
+            db=db,
+            user_id=current_user.id,
+            action=AuditAction.UPDATE_STORAGE_LOCATION,
+            entity_type=EntityType.STORAGE_LOCATION,
+            entity_id=location.id,
+            details={"changes": changes}
+        )
+
+        db.commit()
+        db.refresh(location)
+        return location
+
+    @staticmethod
+    def delete_location(
+        db: Session,
+        location_id: UUID,
+        current_user
+    ) -> None:
+        """
+        Soft delete a storage location (sets is_active=False).
+
+        Raises:
+            LookupError: If location not found
+        """
+        location = db.query(StorageLocation).filter(
+            StorageLocation.id == location_id
+        ).first()
+        if not location:
+            raise LookupError(f"Opslaglocatie met ID {location_id} niet gevonden")
+
+        location.is_active = False
+
+        log_action(
+            db=db,
+            user_id=current_user.id,
+            action=AuditAction.DELETE_STORAGE_LOCATION,
+            entity_type=EntityType.STORAGE_LOCATION,
+            entity_id=location.id,
+            details={"naam": location.naam}
+        )
+
+        db.commit()

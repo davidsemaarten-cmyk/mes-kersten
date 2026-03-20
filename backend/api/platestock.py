@@ -26,13 +26,17 @@ from schemas.platestock import (
     ClaimBulkCreate, BulkClaimResponse,
     ReleaseByProjectRequest, ReleaseByProjectResponse,
     # Statistics schemas
-    OverviewStats, ProjectsStatsResponse
+    OverviewStats, ProjectsStatsResponse,
+    # Storage Location schemas
+    StorageLocationCreate, StorageLocationUpdate, StorageLocationResponse, StorageLocationList
 )
-from services.platestock import PlateStockService
+from schemas.user import MessageResponse
+from services.platestock import PlateStockService, StorageLocationService
 from utils.auth import get_current_user
 from utils.permissions import require_admin, require_admin_or_werkvoorbereider, require_werkplaats_access
 
 router = APIRouter()
+storage_locations_router = APIRouter()
 
 
 # ============================================================
@@ -170,7 +174,7 @@ async def update_material(
         raise HTTPException(status_code=404, detail="Materiaal niet gevonden")
 
 
-@router.delete("/materials/{material_id}")
+@router.delete("/materials/{material_id}", response_model=MessageResponse)
 async def delete_material(
     material_id: str,
     db: Session = Depends(get_db),
@@ -186,7 +190,7 @@ async def delete_material(
             material_id=material_id
         )
 
-        return {"success": True}
+        return {"message": "Materiaal verwijderd"}
 
     except MaterialNotFoundError:
         raise HTTPException(status_code=404, detail="Materiaal niet gevonden")
@@ -233,7 +237,7 @@ async def get_plates(
         plate_dict['material'] = MaterialResponse.from_orm(plate.material) if plate.material else None
         plate_dict['creator'] = UserSummary.from_orm(plate.creator) if plate.creator else None
         plate_dict['consumer'] = UserSummary.from_orm(plate.consumer) if plate.consumer else None
-        plate_dict['claims'] = [ClaimResponse.from_orm(c) for c in plate.claims if c.actief]
+        plate_dict['claims'] = [ClaimResponse.from_orm(c) for c in plate.claims if c.is_active]
 
         result.append(plate_dict)
 
@@ -326,7 +330,7 @@ async def update_plate(
         raise HTTPException(status_code=404, detail="Plaat niet gevonden")
 
 
-@router.delete("/plates/{plate_id}")
+@router.delete("/plates/{plate_id}", response_model=MessageResponse)
 async def delete_plate(
     plate_id: str,
     db: Session = Depends(get_db),
@@ -342,7 +346,7 @@ async def delete_plate(
             plate_id=plate_id
         )
 
-        return {"success": True, "message": "Plaat verwijderd"}
+        return {"message": "Plaat verwijderd"}
 
     except PlateNotFoundError:
         raise HTTPException(status_code=404, detail="Plaat niet gevonden")
@@ -488,7 +492,7 @@ async def get_claims(
 
     # Apply filters
     if actief is not None:
-        query = query.filter(Claim.actief == actief)
+        query = query.filter(Claim.is_active == actief)
     if project_naam:
         query = query.filter(Claim.project_naam == project_naam)
     if project_fase:
@@ -580,13 +584,13 @@ async def update_claim(
         raise HTTPException(status_code=404, detail="Claim niet gevonden")
 
 
-@router.delete("/claims/{claim_id}")
+@router.delete("/claims/{claim_id}", response_model=MessageResponse)
 async def release_claim(
     claim_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin_or_werkvoorbereider)
 ):
-    """Release claim (sets actief=false) (admin, werkvoorbereider)"""
+    """Release claim (sets is_active=false) (admin, werkvoorbereider)"""
     from services.exceptions import ClaimNotFoundError
 
     try:
@@ -596,7 +600,7 @@ async def release_claim(
             claim_id=claim_id
         )
 
-        return {"success": True, "message": "Claim vrijgegeven"}
+        return {"message": "Claim vrijgegeven"}
 
     except ClaimNotFoundError:
         raise HTTPException(status_code=404, detail="Claim niet gevonden")
@@ -644,3 +648,122 @@ async def get_project_stats(
     """Get project statistics"""
     stats = PlateStockService.get_project_stats(db)
     return stats
+
+
+# ============================================================
+# STORAGE LOCATION ENDPOINTS
+# ============================================================
+
+@storage_locations_router.get("/", response_model=List[StorageLocationResponse])
+async def list_storage_locations(
+    include_inactive: bool = Query(False, description="Include inactive locations"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # All authenticated users can view
+):
+    """
+    Get list of storage locations
+
+    - **include_inactive**: If true, includes inactive locations (default: false)
+    """
+    return StorageLocationService.list_locations(db=db, include_inactive=include_inactive)
+
+
+@storage_locations_router.get("/{location_id}", response_model=StorageLocationResponse)
+async def get_storage_location(
+    location_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get a single storage location by ID"""
+    location = StorageLocationService.get_location(db=db, location_id=location_id)
+
+    if not location:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Opslaglocatie met ID {location_id} niet gevonden"
+        )
+
+    return location
+
+
+@storage_locations_router.post("/", response_model=StorageLocationResponse, status_code=status.HTTP_201_CREATED)
+async def create_storage_location(
+    location_data: StorageLocationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)  # Admin only
+):
+    """
+    Create a new storage location (Admin only)
+
+    Validates that the location name is unique (case-insensitive)
+    """
+    try:
+        return StorageLocationService.create_location(
+            db=db,
+            naam=location_data.naam,
+            beschrijving=location_data.beschrijving,
+            current_user=current_user
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@storage_locations_router.put("/{location_id}", response_model=StorageLocationResponse)
+async def update_storage_location(
+    location_id: str,
+    location_data: StorageLocationUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)  # Admin only
+):
+    """
+    Update a storage location (Admin only)
+
+    Can update name, description, or active status
+    """
+    try:
+        return StorageLocationService.update_location(
+            db=db,
+            location_id=location_id,
+            naam=location_data.naam,
+            beschrijving=location_data.beschrijving,
+            is_active=location_data.is_active,
+            current_user=current_user
+        )
+    except LookupError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@storage_locations_router.delete("/{location_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_storage_location(
+    location_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)  # Admin only
+):
+    """
+    Soft delete a storage location (Admin only)
+
+    Sets is_active=false instead of physically deleting the record
+    """
+    try:
+        StorageLocationService.delete_location(
+            db=db,
+            location_id=location_id,
+            current_user=current_user
+        )
+        return None
+    except LookupError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
