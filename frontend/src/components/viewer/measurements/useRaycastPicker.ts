@@ -10,6 +10,14 @@ const EDGE_SNAP_PX   = 6
 const CLICK_MAX_MS   = 200
 const CLICK_MAX_PX   = 5
 
+// ── Geometry helpers ─────────────────────────────────────────────────────────
+
+function closestPointOnSegment(p: THREE.Vector3, a: THREE.Vector3, b: THREE.Vector3): THREE.Vector3 {
+  const ab = b.clone().sub(a)
+  const t = Math.max(0, Math.min(1, p.clone().sub(a).dot(ab) / ab.lengthSq()))
+  return a.clone().addScaledVector(ab, t)
+}
+
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
 interface UseRaycastPickerOptions {
@@ -70,12 +78,13 @@ export function useRaycastPicker({
       return
     }
 
-    const { container, camera, meshes, scene } = viewerRefs
+    const { camera, meshes, renderer } = viewerRefs
+    const canvas = renderer.domElement
     const raycaster = new THREE.Raycaster()
     raycaster.params.Line = { threshold: 0.01 }
 
     function getCanvasCoords(e: PointerEvent): THREE.Vector2 {
-      const rect = container.getBoundingClientRect()
+      const rect = canvas.getBoundingClientRect()
       return new THREE.Vector2(
         ((e.clientX - rect.left) / rect.width) * 2 - 1,
         -((e.clientY - rect.top) / rect.height) * 2 + 1
@@ -106,7 +115,7 @@ export function useRaycastPicker({
 
       if (!geometry) return null
 
-      const rect = container.getBoundingClientRect()
+      const rect = canvas.getBoundingClientRect()
       const clientX = ((ndcCoords.x + 1) / 2) * rect.width
       const clientY = ((1 - ndcCoords.y) / 2) * rect.height
 
@@ -179,14 +188,12 @@ export function useRaycastPicker({
       let bestEdgeDist = EDGE_SNAP_PX
       let bestEdgePt: THREE.Vector3 | null = null
       for (const [p1, p2] of edges) {
-        // Find closest point on edge to screen cursor
-        for (let t = 0; t <= 1; t += 0.1) {
-          const candidate = p1.clone().lerp(p2, t)
-          const d = screenDistance(candidate, clientX, clientY, rect)
-          if (d < bestEdgeDist) {
-            bestEdgeDist = d
-            bestEdgePt = candidate
-          }
+        // Analytically find closest point on edge segment to hit point
+        const candidate = closestPointOnSegment(hit.point, p1, p2)
+        const d = screenDistance(candidate, clientX, clientY, rect)
+        if (d < bestEdgeDist) {
+          bestEdgeDist = d
+          bestEdgePt = candidate
         }
       }
       if (bestEdgePt) {
@@ -241,16 +248,16 @@ export function useRaycastPicker({
       if (snap) onClick(snap)
     }
 
-    container.style.cursor = 'crosshair'
-    container.addEventListener('pointermove', onPointerMove)
-    container.addEventListener('pointerdown', onPointerDown)
-    container.addEventListener('pointerup', onPointerUp)
+    canvas.style.cursor = 'crosshair'
+    canvas.addEventListener('pointermove', onPointerMove)
+    canvas.addEventListener('pointerdown', onPointerDown)
+    canvas.addEventListener('pointerup', onPointerUp)
 
     return () => {
-      container.style.cursor = ''
-      container.removeEventListener('pointermove', onPointerMove)
-      container.removeEventListener('pointerdown', onPointerDown)
-      container.removeEventListener('pointerup', onPointerUp)
+      canvas.style.cursor = ''
+      canvas.removeEventListener('pointermove', onPointerMove)
+      canvas.removeEventListener('pointerdown', onPointerDown)
+      canvas.removeEventListener('pointerup', onPointerUp)
       hideIndicator()
       onHover(null)
     }

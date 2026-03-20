@@ -99,12 +99,14 @@ export function floodFillCoplanarFaces(
     }
   }
 
+  const MAX_FACES = 2000
   const startNormal = getFaceNormal(startFaceIndex)
   const visited = new Set<number>()
   const queue = [startFaceIndex]
   visited.add(startFaceIndex)
 
   while (queue.length > 0) {
+    if (visited.size >= MAX_FACES) break
     const current = queue.shift()!
     const [a, b, c] = getFaceVertexIndices(current)
 

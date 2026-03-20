@@ -1,10 +1,7 @@
+import type { ReactNode } from 'react'
 import { Ruler, Move, Layers, Triangle, Circle, Trash2 } from 'lucide-react'
 import { Button } from '../../ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '../../ui/tooltip'
+import { Tooltip } from '../../ui/tooltip'
 import type { MeasurementMode, MeasurementPhase } from './types'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -22,7 +19,7 @@ interface MeasurementToolbarProps {
 
 const MODE_BUTTONS: {
   mode: MeasurementMode
-  icon: React.ReactNode
+  icon: ReactNode
   label: string
   hint: string
 }[] = [
@@ -87,36 +84,36 @@ export function MeasurementToolbar({
   const instruction = phaseInstruction(mode, phase)
 
   return (
-    <div className="flex items-center gap-1 ml-auto">
+    <div className="flex flex-col items-center gap-1">
+      {/* Phase instruction hint */}
+      {instruction && (
+        <span className="text-xs text-amber-600 font-medium animate-pulse bg-black/60 rounded px-2 py-0.5">
+          {instruction}
+        </span>
+      )}
       {/* Ruler group indicator */}
-      <div className="flex items-center gap-1 px-1.5 h-8 rounded-md border border-border/60 bg-muted/40">
+      <div className="flex items-center gap-1 px-2 h-9 rounded-full border border-border/60 bg-background/90 backdrop-blur shadow-lg">
         <Ruler className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
 
         {/* Mode buttons */}
         {MODE_BUTTONS.map(({ mode: btnMode, icon, label, hint }) => (
-          <Tooltip key={btnMode}>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={disabled}
-                aria-label={label}
-                aria-pressed={mode === btnMode}
-                onClick={() => onModeChange(btnMode)}
-                className={[
-                  'h-6 w-6 rounded',
-                  mode === btnMode
-                    ? 'bg-amber-500/20 text-amber-600 ring-1 ring-amber-500/30'
-                    : 'text-muted-foreground hover:text-foreground',
-                ].join(' ')}
-              >
-                {icon}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
-              <p className="font-medium">{label}</p>
-              <p className="text-muted-foreground">{hint}</p>
-            </TooltipContent>
+          <Tooltip key={btnMode} content={<><span className="font-medium">{label}</span><br /><span className="opacity-70">{hint}</span></>}>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={disabled}
+              aria-label={label}
+              aria-pressed={mode === btnMode}
+              onClick={() => onModeChange(btnMode)}
+              className={[
+                'h-6 w-6 rounded',
+                mode === btnMode
+                  ? 'bg-amber-500/20 text-amber-600 ring-1 ring-amber-500/30'
+                  : 'text-muted-foreground hover:text-foreground',
+              ].join(' ')}
+            >
+              {icon}
+            </Button>
           </Tooltip>
         ))}
 
@@ -127,32 +124,21 @@ export function MeasurementToolbar({
             <span className="text-xs text-muted-foreground tabular-nums px-1">
               {measurementCount}
             </span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Alle metingen wissen"
-                  onClick={onClearAll}
-                  className="h-6 w-6 rounded text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                Alle metingen wissen
-              </TooltipContent>
+            <Tooltip content="Alle metingen wissen">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Alle metingen wissen"
+                onClick={onClearAll}
+                className="h-6 w-6 rounded text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
             </Tooltip>
           </>
         )}
       </div>
 
-      {/* Phase instruction hint */}
-      {instruction && (
-        <span className="text-xs text-amber-600 font-medium animate-pulse">
-          {instruction}
-        </span>
-      )}
     </div>
   )
 }

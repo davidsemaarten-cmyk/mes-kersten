@@ -2,7 +2,6 @@ import { useRef, useState, useEffect } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react'
 import { Button } from '../components/ui/button'
-import { TooltipProvider } from '../components/ui/tooltip'
 import { Layout } from '../components/Layout'
 import api from '../lib/api'
 import * as THREE from 'three'
@@ -292,7 +291,6 @@ export function StepViewerPage() {
 
   return (
     <Layout compact>
-      <TooltipProvider>
         <div className="flex flex-col h-full">
           {/* Header bar */}
           <div className="flex items-center gap-3 px-4 h-12 border-b bg-white shrink-0">
@@ -327,16 +325,6 @@ export function StepViewerPage() {
               </span>
             )}
 
-            {/* Measurement toolbar — shown once viewer is ready */}
-            {viewerStatus === 'ready' && (
-              <MeasurementToolbar
-                mode={mode}
-                phase={phase}
-                onModeChange={activateMode}
-                onClearAll={clearAll}
-                measurementCount={results.length}
-              />
-            )}
           </div>
 
           {/* Canvas area — position relative so overlays can be absolute */}
@@ -347,9 +335,23 @@ export function StepViewerPage() {
             {viewerStatus === 'ready' && (
               <MeasurementPanel results={results} onDelete={deleteResult} />
             )}
+
+            {/* Measurement toolbar — bottom bar over canvas */}
+            {viewerStatus === 'ready' && (
+              <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-3 pointer-events-none" aria-hidden="true">
+                <div className="pointer-events-auto" aria-hidden={undefined} role="toolbar" aria-label="Meetgereedschap">
+                  <MeasurementToolbar
+                    mode={mode}
+                    phase={phase}
+                    onModeChange={activateMode}
+                    onClearAll={clearAll}
+                    measurementCount={results.length}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </TooltipProvider>
     </Layout>
   )
 }
