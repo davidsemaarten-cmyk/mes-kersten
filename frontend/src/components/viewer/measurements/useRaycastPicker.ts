@@ -35,6 +35,7 @@ export function useRaycastPicker({
 }: UseRaycastPickerOptions): void {
   const snapIndicatorRef = useRef<THREE.Mesh | null>(null)
   const pointerDownInfoRef = useRef<{ x: number; y: number; time: number } | null>(null)
+  const lastSnapRef = useRef<SnapTarget | null>(undefined as any)
 
   // Create / destroy snap indicator sphere
   useEffect(() => {
@@ -83,8 +84,7 @@ export function useRaycastPicker({
     const raycaster = new THREE.Raycaster()
     raycaster.params.Line = { threshold: 0.01 }
 
-    function getCanvasCoords(e: PointerEvent): THREE.Vector2 {
-      const rect = canvas.getBoundingClientRect()
+    function getCanvasCoords(e: PointerEvent, rect: DOMRect): THREE.Vector2 {
       return new THREE.Vector2(
         ((e.clientX - rect.left) / rect.width) * 2 - 1,
         -((e.clientY - rect.top) / rect.height) * 2 + 1
@@ -103,7 +103,7 @@ export function useRaycastPicker({
       return Math.sqrt((sx - screenX) ** 2 + (sy - screenY) ** 2)
     }
 
-    function castRay(ndcCoords: THREE.Vector2): SnapTarget | null {
+    function castRay(ndcCoords: THREE.Vector2, rect: DOMRect): SnapTarget | null {
       raycaster.setFromCamera(ndcCoords, camera)
       const hits = raycaster.intersectObjects(meshes, false)
       if (hits.length === 0) return null
@@ -115,7 +115,6 @@ export function useRaycastPicker({
 
       if (!geometry) return null
 
-      const rect = canvas.getBoundingClientRect()
       const clientX = ((ndcCoords.x + 1) / 2) * rect.width
       const clientY = ((1 - ndcCoords.y) / 2) * rect.height
 
@@ -221,10 +220,13 @@ export function useRaycastPicker({
     }
 
     function onPointerMove(e: PointerEvent): void {
-      const ndc = getCanvasCoords(e)
-      const snap = castRay(ndc)
-      if (!snap) hideIndicator()
-      onHover(snap)
+      const rect = canvas.getBoundingClientRect()
+      const ndc = getCanvasCoords(e, rect)
+      const result = castRay(ndc, rect)
+      if (!result) hideIndicator()
+      if (result === null && lastSnapRef.current === null) return
+      lastSnapRef.current = result
+      onHover(result)
     }
 
     function onPointerDown(e: PointerEvent): void {
@@ -243,8 +245,9 @@ export function useRaycastPicker({
 
       if (dt > CLICK_MAX_MS || moved > CLICK_MAX_PX) return
 
-      const ndc = getCanvasCoords(e)
-      const snap = castRay(ndc)
+      const rect = canvas.getBoundingClientRect()
+      const ndc = getCanvasCoords(e, rect)
+      const snap = castRay(ndc, rect)
       if (snap) onClick(snap)
     }
 

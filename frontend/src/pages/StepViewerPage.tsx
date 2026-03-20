@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Layout } from '../components/Layout'
 import api from '../lib/api'
+import { extractErrorMessage } from '../lib/errorUtils'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
@@ -118,6 +119,7 @@ export function StepViewerPage() {
 
         // ── Convert occt meshes to Three.js ────────────────────────────────
         const allMeshes: THREE.Mesh[] = []
+        const allEdgeObjects: THREE.LineSegments[] = []
         for (const mesh of result.meshes) {
           const geometry = new THREE.BufferGeometry()
 
@@ -161,6 +163,7 @@ export function StepViewerPage() {
           })
           const edges = new THREE.LineSegments(edgesGeo, edgesMat)
           scene.add(edges)
+          allEdgeObjects.push(edges)
         }
 
         loadedMeshes = allMeshes
@@ -176,6 +179,7 @@ export function StepViewerPage() {
         box.getCenter(center)
         box.getSize(size)
 
+        const modelDiagonal = size.length()
         const maxDim = Math.max(size.x, size.y, size.z)
         const fov    = camera.fov * (Math.PI / 180)
         let distance = Math.abs(maxDim / (2 * Math.tan(fov / 2))) * 1.5
@@ -239,6 +243,7 @@ export function StepViewerPage() {
           css2dRenderer: css2dRenderer!,
           meshes: allMeshes,
           controls,
+          modelDiagonal,
         })
 
         // Store cleanup
@@ -253,6 +258,11 @@ export function StepViewerPage() {
               (m.material as THREE.Material).dispose()
             }
           }
+          for (const ls of allEdgeObjects) {
+            (ls.geometry as THREE.EdgesGeometry).dispose()
+            ;(ls.material as THREE.Material).dispose()
+            scene.remove(ls)
+          }
           renderer?.dispose()
           if (renderer?.domElement && container.contains(renderer.domElement)) {
             container.removeChild(renderer.domElement)
@@ -263,7 +273,7 @@ export function StepViewerPage() {
         }
       } catch (err: any) {
         if (!disposed) {
-          setErrorMsg(err?.response?.data?.detail ?? 'Fout bij ophalen STEP bestand')
+          setErrorMsg(extractErrorMessage(err, 'Fout bij ophalen STEP bestand'))
           setViewerStatus('error')
         }
       }
@@ -338,8 +348,8 @@ export function StepViewerPage() {
 
             {/* Measurement toolbar — bottom bar over canvas */}
             {viewerStatus === 'ready' && (
-              <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-3 pointer-events-none" aria-hidden="true">
-                <div className="pointer-events-auto" aria-hidden={undefined} role="toolbar" aria-label="Meetgereedschap">
+              <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-3 pointer-events-none">
+                <div className="pointer-events-auto" role="toolbar" aria-label="Meetgereedschap">
                   <MeasurementToolbar
                     mode={mode}
                     phase={phase}

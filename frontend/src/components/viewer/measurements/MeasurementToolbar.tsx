@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Ruler, Move, Layers, Triangle, Circle, Trash2 } from 'lucide-react'
 import { Button } from '../../ui/button'
 import { Tooltip } from '../../ui/tooltip'
+import { cn } from '../../../lib/utils'
 import type { MeasurementMode, MeasurementPhase } from './types'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -105,12 +106,12 @@ export function MeasurementToolbar({
               aria-label={label}
               aria-pressed={mode === btnMode}
               onClick={() => onModeChange(btnMode)}
-              className={[
+              className={cn(
                 'h-6 w-6 rounded',
                 mode === btnMode
                   ? 'bg-amber-500/20 text-amber-600 ring-1 ring-amber-500/30'
                   : 'text-muted-foreground hover:text-foreground',
-              ].join(' ')}
+              )}
             >
               {icon}
             </Button>

@@ -181,12 +181,10 @@ export function updatePreviewLine(
   from: THREE.Vector3,
   to: THREE.Vector3
 ): void {
-  const positions = new Float32Array([
-    from.x, from.y, from.z,
-    to.x,   to.y,   to.z,
-  ])
-  line.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-  line.geometry.attributes.position.needsUpdate = true
+  const pos = line.geometry.getAttribute('position') as THREE.BufferAttribute
+  pos.setXYZ(0, from.x, from.y, from.z)
+  pos.setXYZ(1, to.x, to.y, to.z)
+  pos.needsUpdate = true
   line.computeLineDistances()
   line.visible = true
 }
@@ -231,12 +229,8 @@ export function createFaceHighlight(
 
 // ── Compute marker scale from model diagonal ──────────────────────────────────
 
-function markerScale(scene: THREE.Scene): number {
-  const box = new THREE.Box3().setFromObject(scene)
-  const size = new THREE.Vector3()
-  box.getSize(size)
-  const diagonal = size.length()
-  const base = diagonal * 0.008
+function markerScale(diag: number): number {
+  const base = diag * 0.008
   return Math.max(base, 0.003) // minimum 3mm in world units
 }
 
@@ -245,12 +239,12 @@ function markerScale(scene: THREE.Scene): number {
 function buildPointToPointAnnotation(
   result: PointToPointResult,
   onDelete: (id: string) => void,
-  scene: THREE.Scene
+  diag: number
 ): THREE.Group {
   const group = new THREE.Group()
   group.userData.measurementId = result.id
 
-  const ms = markerScale(scene)
+  const ms = markerScale(diag)
   const line = createDashedLine(result.pointA, result.pointB, COLORS.linePointToPoint)
   group.add(line)
 
@@ -270,12 +264,12 @@ function buildPointToPointAnnotation(
 function buildFaceDistanceAnnotation(
   result: FaceDistanceResult,
   onDelete: (id: string) => void,
-  scene: THREE.Scene
+  diag: number
 ): THREE.Group {
   const group = new THREE.Group()
   group.userData.measurementId = result.id
 
-  const ms = markerScale(scene)
+  const ms = markerScale(diag)
   const line = createDashedLine(result.centroidA, result.centroidB, COLORS.lineFaceDistance)
   group.add(line)
 
@@ -302,12 +296,12 @@ function buildFaceDistanceAnnotation(
 function buildFaceAngleAnnotation(
   result: FaceAngleResult,
   onDelete: (id: string) => void,
-  scene: THREE.Scene
+  diag: number
 ): THREE.Group {
   const group = new THREE.Group()
   group.userData.measurementId = result.id
 
-  const ms = markerScale(scene)
+  const ms = markerScale(diag)
   const normalLen = ms * 15
 
   // Draw normal indicator lines from each face centroid
@@ -357,12 +351,12 @@ function buildFaceAngleAnnotation(
 function buildRadiusAnnotation(
   result: RadiusResult,
   onDelete: (id: string) => void,
-  scene: THREE.Scene
+  diag: number
 ): THREE.Group {
   const group = new THREE.Group()
   group.userData.measurementId = result.id
 
-  const ms = markerScale(scene)
+  const ms = markerScale(diag)
   group.add(createMarkerSphere(result.center, COLORS.lineRadius, ms * 1.4))
 
   const label = createMeasurementLabel(
@@ -381,13 +375,13 @@ function buildRadiusAnnotation(
 export function createMeasurementAnnotation(
   result: MeasurementResult,
   onDelete: (id: string) => void,
-  scene: THREE.Scene
+  diag: number
 ): THREE.Group {
   switch (result.kind) {
-    case 'point-to-point': return buildPointToPointAnnotation(result, onDelete, scene)
-    case 'face-distance':  return buildFaceDistanceAnnotation(result, onDelete, scene)
-    case 'face-angle':     return buildFaceAngleAnnotation(result, onDelete, scene)
-    case 'radius':         return buildRadiusAnnotation(result, onDelete, scene)
+    case 'point-to-point': return buildPointToPointAnnotation(result, onDelete, diag)
+    case 'face-distance':  return buildFaceDistanceAnnotation(result, onDelete, diag)
+    case 'face-angle':     return buildFaceAngleAnnotation(result, onDelete, diag)
+    case 'radius':         return buildRadiusAnnotation(result, onDelete, diag)
   }
 }
 

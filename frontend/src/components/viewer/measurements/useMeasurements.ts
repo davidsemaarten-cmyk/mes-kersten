@@ -15,6 +15,8 @@ import {
   floodFillCoplanarFaces,
   computeFaceGroupInfo,
   collectFaceGroupPoints,
+  COPLANAR_THRESHOLD_DEG,
+  CYLINDER_THRESHOLD_DEG,
 } from './computations'
 import {
   createMeasurementAnnotation,
@@ -124,7 +126,7 @@ export function useMeasurements(viewerRefs: ViewerRefs | null): UseMeasurementsR
       const annotation = createMeasurementAnnotation(
         result,
         (id) => deleteResultCallback(id),
-        viewerRefs.scene
+        viewerRefs.modelDiagonal
       )
       annotationGroupRef.current.add(annotation)
     }
@@ -189,7 +191,7 @@ export function useMeasurements(viewerRefs: ViewerRefs | null): UseMeasurementsR
     // ── Face distance ───────────────────────────────────────────────────────
     if (currentMode === 'face-distance') {
       if (currentPhase === 'idle' || currentPhase === 'picking_first') {
-        const faceIndices = floodFillCoplanarFaces(snap.mesh.geometry, snap.faceIndex, 5)
+        const faceIndices = floodFillCoplanarFaces(snap.mesh.geometry, snap.faceIndex, COPLANAR_THRESHOLD_DEG)
         const faceInfo = computeFaceGroupInfo(snap.mesh.geometry, faceIndices, snap.mesh)
 
         pendingFaceIndicesRef.current = faceIndices
@@ -210,7 +212,7 @@ export function useMeasurements(viewerRefs: ViewerRefs | null): UseMeasurementsR
         return
       }
       if (currentPhase === 'picking_second' && pendingFaceInfoRef.current) {
-        const faceIndicesB = floodFillCoplanarFaces(snap.mesh.geometry, snap.faceIndex, 5)
+        const faceIndicesB = floodFillCoplanarFaces(snap.mesh.geometry, snap.faceIndex, COPLANAR_THRESHOLD_DEG)
         const faceInfoB = computeFaceGroupInfo(snap.mesh.geometry, faceIndicesB, snap.mesh)
         const prev = pendingFaceInfoRef.current
 
@@ -237,7 +239,7 @@ export function useMeasurements(viewerRefs: ViewerRefs | null): UseMeasurementsR
     // ── Face angle ──────────────────────────────────────────────────────────
     if (currentMode === 'face-angle') {
       if (currentPhase === 'idle' || currentPhase === 'picking_first') {
-        const faceIndices = floodFillCoplanarFaces(snap.mesh.geometry, snap.faceIndex, 5)
+        const faceIndices = floodFillCoplanarFaces(snap.mesh.geometry, snap.faceIndex, COPLANAR_THRESHOLD_DEG)
         const faceInfo = computeFaceGroupInfo(snap.mesh.geometry, faceIndices, snap.mesh)
 
         pendingFaceIndicesRef.current = faceIndices
@@ -257,7 +259,7 @@ export function useMeasurements(viewerRefs: ViewerRefs | null): UseMeasurementsR
         return
       }
       if (currentPhase === 'picking_second' && pendingFaceInfoRef.current) {
-        const faceIndicesB = floodFillCoplanarFaces(snap.mesh.geometry, snap.faceIndex, 5)
+        const faceIndicesB = floodFillCoplanarFaces(snap.mesh.geometry, snap.faceIndex, COPLANAR_THRESHOLD_DEG)
         const faceInfoB = computeFaceGroupInfo(snap.mesh.geometry, faceIndicesB, snap.mesh)
         const prev = pendingFaceInfoRef.current
 
@@ -281,7 +283,7 @@ export function useMeasurements(viewerRefs: ViewerRefs | null): UseMeasurementsR
     // ── Radius ──────────────────────────────────────────────────────────────
     if (currentMode === 'radius') {
       // Single click — flood fill with wider threshold for curved surfaces
-      const faceIndices = floodFillCoplanarFaces(snap.mesh.geometry, snap.faceIndex, 15)
+      const faceIndices = floodFillCoplanarFaces(snap.mesh.geometry, snap.faceIndex, CYLINDER_THRESHOLD_DEG)
       const { positions, normals } = collectFaceGroupPoints(
         snap.mesh.geometry, faceIndices, snap.mesh
       )

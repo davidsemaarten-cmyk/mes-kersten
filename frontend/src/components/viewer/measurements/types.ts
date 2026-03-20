@@ -82,4 +82,5 @@ export interface ViewerRefs {
   css2dRenderer: CSS2DRenderer
   meshes: Mesh[]
   controls: OrbitControls
+  modelDiagonal: number
 }

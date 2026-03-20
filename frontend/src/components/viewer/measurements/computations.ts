@@ -3,7 +3,10 @@ import type { FaceDistanceResult, FaceAngleResult, RadiusResult } from './types'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const PARALLEL_THRESHOLD = Math.cos((5 * Math.PI) / 180) // cos(5°) ≈ 0.9962
+export const COPLANAR_THRESHOLD_DEG  = 5
+export const CYLINDER_THRESHOLD_DEG  = 15
+
+const PARALLEL_THRESHOLD = Math.cos((COPLANAR_THRESHOLD_DEG * Math.PI) / 180) // cos(5°) ≈ 0.9962
 
 // ── Point-to-point ────────────────────────────────────────────────────────────
 
@@ -58,7 +61,7 @@ export function computeFaceAngle(
 export function floodFillCoplanarFaces(
   geometry: THREE.BufferGeometry,
   startFaceIndex: number,
-  thresholdDeg = 5
+  thresholdDeg = COPLANAR_THRESHOLD_DEG
 ): number[] {
   const threshold = Math.cos((thresholdDeg * Math.PI) / 180)
   const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight, Ruler, X, Move, Layers, Triangle, Circle } from 'lucide-react'
 import { Button } from '../../ui/button'
+import { cn } from '../../../lib/utils'
 import type { MeasurementResult } from './types'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -106,10 +107,10 @@ function ResultRow({
         size="icon"
         aria-label="Meting verwijderen"
         onClick={() => onDelete(result.id)}
-        className={[
+        className={cn(
           'h-5 w-5 rounded shrink-0 transition-opacity',
           hovered ? 'opacity-100' : 'opacity-0',
-        ].join(' ')}
+        )}
       >
         <X className="h-3 w-3" />
       </Button>
@@ -168,10 +169,8 @@ export function MeasurementPanel({ results, onDelete }: MeasurementPanelProps) {
           </div>
 
           {/* Footer disclaimer */}
-          <div className="px-3 py-1.5 border-t border-border/50">
-            <p className="text-xs text-muted-foreground leading-tight">
-              Metingen zijn gebaseerd op mesh-benadering
-            </p>
+          <div className="px-3 py-1.5 border-t border-border/50 text-xs text-muted-foreground leading-tight">
+            Metingen zijn gebaseerd op mesh-benadering
           </div>
         </>
       )}
