@@ -697,6 +697,8 @@ async def create_storage_location(
 
     Validates that the location name is unique (case-insensitive)
     """
+    from services.exceptions import StorageLocationNameExistsError
+
     try:
         return StorageLocationService.create_location(
             db=db,
@@ -704,10 +706,10 @@ async def create_storage_location(
             beschrijving=location_data.beschrijving,
             current_user=current_user
         )
-    except ValueError as e:
+    except StorageLocationNameExistsError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            detail=e.message
         )
 
 
@@ -723,6 +725,8 @@ async def update_storage_location(
 
     Can update name, description, or active status
     """
+    from services.exceptions import StorageLocationNotFoundError, StorageLocationNameExistsError
+
     try:
         return StorageLocationService.update_location(
             db=db,
@@ -732,15 +736,15 @@ async def update_storage_location(
             is_active=location_data.is_active,
             current_user=current_user
         )
-    except LookupError as e:
+    except StorageLocationNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
+            detail=e.message
         )
-    except ValueError as e:
+    except StorageLocationNameExistsError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            detail=e.message
         )
 
 
@@ -755,6 +759,8 @@ async def delete_storage_location(
 
     Sets is_active=false instead of physically deleting the record
     """
+    from services.exceptions import StorageLocationNotFoundError
+
     try:
         StorageLocationService.delete_location(
             db=db,
@@ -762,8 +768,8 @@ async def delete_storage_location(
             current_user=current_user
         )
         return None
-    except LookupError as e:
+    except StorageLocationNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
+            detail=e.message
         )

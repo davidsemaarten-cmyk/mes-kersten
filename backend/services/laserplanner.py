@@ -309,7 +309,12 @@ class LaserplannerService:
                     OrderType.name == "Plaat snijden"
                 ).first()
 
-                if plaat_snijden_type:
+                if not plaat_snijden_type:
+                    logger.warning(
+                        "OrderType 'Plaat snijden' niet gevonden in de database — "
+                        "laserjob %s wordt niet gekoppeld aan een orderreeks", job.id
+                    )
+                elif plaat_snijden_type:
                     # Find existing orderreeks for this fase
                     orderreeks = db.query(Orderreeks).filter(
                         and_(

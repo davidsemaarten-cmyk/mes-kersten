@@ -20,7 +20,8 @@ from services.exceptions import (
     OrderNotFoundError,
     OrderReeksNotFoundError,
     FaseNotFoundError,
-    PermissionDeniedError
+    PermissionDeniedError,
+    ValidationError as ServiceValidationError,
 )
 from schemas.orderreeks import OrderreeksCreate, OrderreeksUpdate, OrderreeksResponse
 from schemas.order import OrderResponse, OrderDetailResponse, OrderAssign, LinkPosnummersRequest
@@ -69,12 +70,12 @@ def create_orderreeks(
     except FaseNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e)
+            detail=e.message
         )
-    except Exception as e:
+    except ServiceValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to create orderreeks: {str(e)}"
+            detail=e.message
         )
 
 
@@ -313,10 +314,10 @@ def link_posnummers_to_order(
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to link posnummers to order"
+                detail="Fout bij koppelen posnummers aan order"
             )
 
-        return {"message": f"Successfully linked {len(data.posnummer_ids)} posnummers to order"}
+        return {"message": f"{len(data.posnummer_ids)} posnummers gekoppeld aan order"}
 
     except OrderNotFoundError as e:
         raise HTTPException(
@@ -326,5 +327,5 @@ def link_posnummers_to_order(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to link posnummers: {str(e)}"
+            detail=f"Fout bij koppelen posnummers: {str(e)}"
         )

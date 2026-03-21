@@ -34,7 +34,9 @@ from services.exceptions import (
     MaterialPrefixNotUniqueException,
     InvalidRemnantDimensionsException,
     PlateNumberGenerationException,
-    ClaimOnConsumedPlateException
+    ClaimOnConsumedPlateException,
+    StorageLocationNotFoundError,
+    StorageLocationNameExistsError,
 )
 from utils.audit import log_action, AuditAction, EntityType
 
@@ -1505,7 +1507,7 @@ class StorageLocationService:
             func.lower(StorageLocation.naam) == func.lower(naam)
         ).first()
         if existing:
-            raise ValueError(f"Opslaglocatie met naam '{naam}' bestaat al")
+            raise StorageLocationNameExistsError(f"Opslaglocatie met naam '{naam}' bestaat al")
 
         location = StorageLocation(
             naam=naam.strip(),
@@ -1549,7 +1551,7 @@ class StorageLocationService:
             StorageLocation.id == location_id
         ).first()
         if not location:
-            raise LookupError(f"Opslaglocatie met ID {location_id} niet gevonden")
+            raise StorageLocationNotFoundError(f"Opslaglocatie met ID {location_id} niet gevonden")
 
         changes = {}
 
@@ -1560,7 +1562,7 @@ class StorageLocationService:
                 StorageLocation.id != location_id
             ).first()
             if existing:
-                raise ValueError(f"Opslaglocatie met naam '{naam}' bestaat al")
+                raise StorageLocationNameExistsError(f"Opslaglocatie met naam '{naam}' bestaat al")
             changes['naam'] = {'old': location.naam, 'new': naam.strip()}
             location.naam = naam.strip()
 
@@ -1601,7 +1603,7 @@ class StorageLocationService:
             StorageLocation.id == location_id
         ).first()
         if not location:
-            raise LookupError(f"Opslaglocatie met ID {location_id} niet gevonden")
+            raise StorageLocationNotFoundError(f"Opslaglocatie met ID {location_id} niet gevonden")
 
         location.is_active = False
 

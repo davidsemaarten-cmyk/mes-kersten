@@ -17,7 +17,13 @@ from models.posnummer import Posnummer
 from models.user import User
 from models.fase import Fase
 from utils.audit import log_action, AuditAction, EntityType
-from services.exceptions import ProjectNotFoundError, FaseNotFoundError
+from services.exceptions import (
+    ProjectNotFoundError,
+    FaseNotFoundError,
+    OrderNotFoundError,
+    OrderReeksNotFoundError,
+    ValidationError,
+)
 
 
 class OrderService:
@@ -52,7 +58,7 @@ class OrderService:
             ValueError: If order_type_ids is empty
         """
         if not order_type_ids:
-            raise ValueError("At least one order type must be specified")
+            raise ValidationError("Minimaal één ordertype moet opgegeven worden")
 
         # Validate fase exists
         fase = db.query(Fase).filter(Fase.id == fase_id).first()
@@ -75,7 +81,7 @@ class OrderService:
         if len(order_types) != len(order_type_ids):
             found_ids = {str(ot.id) for ot in order_types}
             missing_ids = [str(ot_id) for ot_id in order_type_ids if str(ot_id) not in found_ids]
-            raise ValueError(f"Order types not found: {', '.join(missing_ids)}")
+            raise ValidationError(f"Ordertypes niet gevonden: {', '.join(missing_ids)}")
 
         # Create orders for each order type
         for position, order_type_id in enumerate(order_type_ids, start=1):
@@ -162,7 +168,7 @@ class OrderService:
         """
         orderreeks = db.query(Orderreeks).filter(Orderreeks.id == orderreeks_id).first()
         if not orderreeks:
-            raise ValueError("Orderreeks not found")
+            raise OrderReeksNotFoundError("Orderreeks niet gevonden")
 
         if title is not None:
             orderreeks.title = title
@@ -205,7 +211,7 @@ class OrderService:
         """
         orderreeks = db.query(Orderreeks).filter(Orderreeks.id == orderreeks_id).first()
         if not orderreeks:
-            raise ValueError("Orderreeks not found")
+            raise OrderReeksNotFoundError("Orderreeks niet gevonden")
 
         orderreeks.is_active = False
 
@@ -315,7 +321,7 @@ class OrderService:
         """
         order = db.query(Order).filter(Order.id == order_id).first()
         if not order:
-            raise ValueError("Order not found")
+            raise OrderNotFoundError("Order niet gevonden")
 
         order.assigned_to = user_id
 
@@ -356,7 +362,7 @@ class OrderService:
         """
         order = db.query(Order).filter(Order.id == order_id).first()
         if not order:
-            raise ValueError("Order not found")
+            raise OrderNotFoundError("Order niet gevonden")
 
         # Create junction records
         for posnummer_id in posnummer_ids:

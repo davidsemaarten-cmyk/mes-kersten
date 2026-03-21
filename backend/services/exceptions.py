@@ -110,6 +110,20 @@ class ClaimOnConsumedPlateException(ServiceError):
 
 
 # =====================================================
+# Storage Location Exceptions
+# =====================================================
+
+class StorageLocationNotFoundError(ServiceError):
+    """Raised when a requested storage location does not exist"""
+    pass
+
+
+class StorageLocationNameExistsError(ServiceError):
+    """Raised when attempting to create a storage location with a name that already exists"""
+    pass
+
+
+# =====================================================
 # Laserplanner Exceptions
 # =====================================================
 
