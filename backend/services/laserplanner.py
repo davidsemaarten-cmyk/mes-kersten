@@ -21,6 +21,9 @@ from models.laser_pdf_file import LaserPDFFile
 from models.laser_nc_file import LaserNCFile
 from models.laser_step_file import LaserStepFile
 from models.user import User
+from models.orderreeks import Orderreeks
+from models.order import Order
+from models.order_type import OrderType
 from utils.audit import log_action, AuditAction, EntityType
 from services.exceptions import (
     LaserJobNotFoundError,
@@ -300,13 +303,65 @@ class LaserplannerService:
             db.add(job)
             db.flush()
 
+            # Auto-create Orderreeks + Order "Plaat snijden" when fase_id is set
+            if fase_id:
+                plaat_snijden_type = db.query(OrderType).filter(
+                    OrderType.name == "Plaat snijden"
+                ).first()
+
+                if plaat_snijden_type:
+                    # Find existing orderreeks for this fase
+                    orderreeks = db.query(Orderreeks).filter(
+                        and_(
+                            Orderreeks.fase_id == fase_id,
+                            Orderreeks.is_active == True
+                        )
+                    ).first()
+
+                    # Create orderreeks if none exists
+                    if not orderreeks:
+                        orderreeks = Orderreeks(
+                            fase_id=fase_id,
+                            title="Volledig",
+                            status="open",
+                            is_active=True
+                        )
+                        db.add(orderreeks)
+                        db.flush()
+
+                    # Find existing "Plaat snijden" order in this orderreeks
+                    plaat_order = db.query(Order).filter(
+                        and_(
+                            Order.orderreeks_id == orderreeks.id,
+                            Order.order_type_id == plaat_snijden_type.id
+                        )
+                    ).first()
+
+                    if not plaat_order:
+                        # Determine next sequence position
+                        max_pos = db.query(func.max(Order.sequence_position)).filter(
+                            Order.orderreeks_id == orderreeks.id
+                        ).scalar() or 0
+
+                        plaat_order = Order(
+                            orderreeks_id=orderreeks.id,
+                            order_type_id=plaat_snijden_type.id,
+                            sequence_position=max_pos + 1,
+                            status="open"
+                        )
+                        db.add(plaat_order)
+                        db.flush()
+
+                    # Link laser job to the order
+                    job.order_id = plaat_order.id
+
             log_action(
                 db=db,
                 user_id=current_user.id,
                 action=AuditAction.CREATE_LASER_JOB,
                 entity_type=EntityType.LASER_JOB,
                 entity_id=job.id,
-                details={"naam": job.naam}
+                details={"naam": job.naam, "order_id": str(job.order_id) if job.order_id else None}
             )
 
             db.commit()

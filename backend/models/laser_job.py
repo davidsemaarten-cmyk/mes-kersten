@@ -14,6 +14,7 @@ class LaserJob(Base):
 
     project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True)
     fase_id = Column(UUID(as_uuid=True), ForeignKey("fases.id", ondelete="SET NULL"), nullable=True, index=True)
+    order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id", ondelete="SET NULL"), nullable=True, index=True)
 
     status = Column(String(30), nullable=False, default='concept', server_default='concept')
     csv_metadata = Column(JSONB, nullable=True)
@@ -37,6 +38,7 @@ class LaserJob(Base):
     step_files = relationship("LaserStepFile", back_populates="laser_job", cascade="all, delete-orphan", lazy="selectin")
     project = relationship("Project", foreign_keys=[project_id])
     fase = relationship("Fase", foreign_keys=[fase_id])
+    order = relationship("Order", foreign_keys=[order_id])
     creator = relationship("User", foreign_keys=[created_by])
 
     __table_args__ = (
