@@ -17,6 +17,8 @@ import { Laserplanner } from './pages/Laserplanner'
 import { LaserplannerDetail } from './pages/LaserplannerDetail'
 import { NCViewerPage } from './pages/NCViewerPage'
 import { StepViewerPage } from './pages/StepViewerPage'
+import { BOMPage } from './pages/BOMPage'
+import { BuislaserPage } from './pages/BuislaserPage'
 
 // Create a QueryClient instance
 const queryClient = new QueryClient({
@@ -53,11 +55,21 @@ function App() {
             <Route path="/voorraad" element={<ProtectedRoute><Voorraad /></ProtectedRoute>} />
             <Route path="/claims" element={<ProtectedRoute><Claims /></ProtectedRoute>} />
 
-            {/* Laserplanner Routes */}
-            <Route path="/laserplanner" element={<ProtectedRoute><Laserplanner /></ProtectedRoute>} />
+            {/* BOM / Stuklijst */}
+            <Route path="/stuklijst" element={<ProtectedRoute><BOMPage /></ProtectedRoute>} />
+
+            {/* Orders Routes */}
+            <Route path="/orders/plaatlaser" element={<ProtectedRoute><Laserplanner /></ProtectedRoute>} />
+            <Route path="/orders/plaatlaser/nc-viewer/:jobId/:ncId" element={<ProtectedRoute><NCViewerPage /></ProtectedRoute>} />
+            <Route path="/orders/plaatlaser/step-viewer/:jobId/:stepId" element={<ProtectedRoute><StepViewerPage /></ProtectedRoute>} />
+            <Route path="/orders/plaatlaser/:jobId" element={<ProtectedRoute><LaserplannerDetail /></ProtectedRoute>} />
+            <Route path="/orders/buislaser" element={<ProtectedRoute><BuislaserPage /></ProtectedRoute>} />
+
+            {/* Backwards compat: redirect /laserplanner/* → /orders/plaatlaser/* */}
+            <Route path="/laserplanner" element={<Navigate to="/orders/plaatlaser" replace />} />
+            <Route path="/laserplanner/:jobId" element={<ProtectedRoute><LaserplannerDetail /></ProtectedRoute>} />
             <Route path="/laserplanner/nc-viewer/:jobId/:ncId" element={<ProtectedRoute><NCViewerPage /></ProtectedRoute>} />
             <Route path="/laserplanner/step-viewer/:jobId/:stepId" element={<ProtectedRoute><StepViewerPage /></ProtectedRoute>} />
-            <Route path="/laserplanner/:jobId" element={<ProtectedRoute><LaserplannerDetail /></ProtectedRoute>} />
 
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/storage-locations" element={<ProtectedRoute><StorageLocations /></ProtectedRoute>} />

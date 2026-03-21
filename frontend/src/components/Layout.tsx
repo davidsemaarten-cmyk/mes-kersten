@@ -10,21 +10,25 @@ import {
   Folder,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   LogOut,
   User,
   Zap,
-  MapPin
+  MapPin,
+  List,
 } from 'lucide-react'
 
 interface LayoutProps {
   children: ReactNode
+  /** Compact mode: hides top header and removes page padding. Use for full-height views like the NC viewer. */
+  compact?: boolean
 }
 
 /**
  * Linear-inspired sidebar layout component
  * Features collapsible sidebar with localStorage persistence
  */
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, compact = false }: LayoutProps) {
   const { user, logout } = useAuth()
   const { permissions } = usePermissions()
   const navigate = useNavigate()
@@ -36,10 +40,20 @@ export function Layout({ children }: LayoutProps) {
     return saved ? JSON.parse(saved) : false
   })
 
+  // Orders submenu expanded state
+  const [ordersExpanded, setOrdersExpanded] = useState(() => {
+    const saved = localStorage.getItem('ordersSubmenuExpanded')
+    return saved ? JSON.parse(saved) : true
+  })
+
   // Save sidebar state to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed))
   }, [isCollapsed])
+
+  useEffect(() => {
+    localStorage.setItem('ordersSubmenuExpanded', JSON.stringify(ordersExpanded))
+  }, [ordersExpanded])
 
   const handleLogout = () => {
     logout()
@@ -56,7 +70,7 @@ export function Layout({ children }: LayoutProps) {
     { name: 'Projecten', path: '/projecten', icon: Folder, requiresPermission: 'canCreateProjects' as const },
     { name: 'Voorraad', path: '/voorraad', icon: Package },
     { name: 'Locatiebeheer', path: '/storage-locations', icon: MapPin },
-    { name: 'Laserplanner', path: '/laserplanner', icon: Zap, requiresPermission: 'canPlanLaser' as const },
+    { name: 'Stuklijst', path: '/stuklijst', icon: List },
     { name: 'Claims', path: '/claims', icon: FileText },
     { name: 'Admin', path: '/admin', icon: Settings },
   ]
@@ -66,6 +80,18 @@ export function Layout({ children }: LayoutProps) {
     if (!item.requiresPermission) return true
     return permissions[item.requiresPermission]
   })
+
+  const showOrdersMenu = permissions.canPlanLaser
+
+  // Orders submenu items
+  const orderSubItems = [
+    { name: 'Plaatlaser', path: '/orders/plaatlaser', disabled: false },
+    { name: 'Buislaser', path: '/orders/buislaser', disabled: false },
+    { name: 'Zagen', path: '/orders/zagen', disabled: true },
+    { name: 'Boren', path: '/orders/boren', disabled: true },
+  ]
+
+  const isOrdersActive = location.pathname.startsWith('/orders')
 
   const isActive = (path: string) => {
     // Match exact path or any child path (for project details, etc.)
@@ -121,6 +147,60 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               )
             })}
+
+            {/* Orders submenu */}
+            {showOrdersMenu && (
+              <div>
+                <button
+                  onClick={() => !isCollapsed && setOrdersExpanded(v => !v)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isOrdersActive
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                  title={isCollapsed ? 'Orders' : undefined}
+                >
+                  <Zap className="h-5 w-5 flex-shrink-0" />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1 text-left">Orders</span>
+                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${ordersExpanded ? 'rotate-180' : ''}`} />
+                    </>
+                  )}
+                </button>
+
+                {!isCollapsed && ordersExpanded && (
+                  <div className="mt-0.5 ml-4 pl-3 border-l border-gray-100 space-y-0.5">
+                    {orderSubItems.map((sub) => {
+                      const active = location.pathname.startsWith(sub.path)
+                      if (sub.disabled) {
+                        return (
+                          <span
+                            key={sub.path}
+                            className="flex items-center px-3 py-1.5 rounded-md text-xs font-medium text-gray-300 cursor-not-allowed"
+                          >
+                            {sub.name}
+                          </span>
+                        )
+                      }
+                      return (
+                        <Link
+                          key={sub.path}
+                          to={sub.path}
+                          className={`flex items-center px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                            active
+                              ? 'bg-gray-100 text-gray-900'
+                              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                          }`}
+                        >
+                          {sub.name}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
 
           {/* User Section at Bottom */}
@@ -154,21 +234,19 @@ export function Layout({ children }: LayoutProps) {
       <div
         className={`flex-1 transition-all duration-200 ease-in-out ${
           user ? (isCollapsed ? 'ml-16' : 'ml-60') : ''
-        }`}
+        } ${compact ? 'flex flex-col h-screen overflow-hidden' : ''}`}
       >
-        {/* Top Header */}
-        {user && (
+        {/* Top Header — hidden in compact mode */}
+        {user && !compact && (
           <header className="h-16 border-b border-gray-200 bg-white px-8 flex items-center">
             <div className="flex-1">
               {/* Page title will be rendered by individual pages */}
             </div>
-
-            {/* User info moved to sidebar, this space can be used for page actions */}
           </header>
         )}
 
         {/* Page Content */}
-        <main className={`${user ? 'p-8' : ''}`}>
+        <main className={`${user && !compact ? 'p-8' : ''} ${compact ? 'flex-1 overflow-hidden' : ''}`}>
           {children}
         </main>
       </div>
