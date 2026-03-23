@@ -24,6 +24,7 @@ from models.user import User
 from models.orderreeks import Orderreeks
 from models.order import Order
 from models.order_type import OrderType
+from models.posnummer import Posnummer
 from utils.audit import log_action, AuditAction, EntityType
 from services.exceptions import (
     LaserJobNotFoundError,
@@ -480,6 +481,18 @@ class LaserplannerService:
         return jobs
 
     @staticmethod
+    def list_jobs_by_fase(db: Session, fase_id: UUID) -> List[LaserJob]:
+        """List all active jobs for a specific fase"""
+        jobs = db.query(LaserJob).filter(
+            and_(
+                LaserJob.fase_id == fase_id,
+                LaserJob.is_active == True
+            )
+        ).order_by(LaserJob.updated_at.desc()).all()
+        LaserplannerService._populate_exported_by_names(db, jobs)
+        return jobs
+
+    @staticmethod
     def delete_job(db: Session, job_id: UUID, current_user: User) -> None:
         """Soft delete a job"""
         try:
@@ -580,6 +593,40 @@ class LaserplannerService:
 
             db.flush()
 
+            # Synchronise posnummers to the posnummers table for this fase.
+            # This allows orders to reference posnummers directly via the
+            # existing order_posnummers linkage.
+            synced_count = 0
+            if job.fase_id:
+                # Fetch existing active posnummers for this fase (case-insensitive lookup)
+                existing_posnrs = {
+                    p.posnr.lower()
+                    for p in db.query(Posnummer.posnr).filter(
+                        Posnummer.fase_id == job.fase_id,
+                        Posnummer.is_active == True
+                    ).all()
+                }
+
+                for item_data in line_items:
+                    posnr = (item_data.get('posnr') or '').strip()
+                    if not posnr or posnr.lower() in existing_posnrs:
+                        continue
+                    # Create a new posnummer record from the CSV data
+                    new_pos = Posnummer(
+                        fase_id=job.fase_id,
+                        posnr=posnr,
+                        materiaal=item_data.get('kwaliteit') or 'Onbekend',
+                        profiel=item_data.get('profiel'),
+                        quantity=item_data.get('aantal') or 1,
+                        notes=f"Automatisch aangemaakt vanuit CSV import ({original_filename})",
+                    )
+                    db.add(new_pos)
+                    existing_posnrs.add(posnr.lower())
+                    synced_count += 1
+
+                if synced_count > 0:
+                    db.flush()
+
             log_action(
                 db=db,
                 user_id=current_user.id,
@@ -590,6 +637,7 @@ class LaserplannerService:
                     "line_items_added": len(line_items),
                     "csv_import_id": str(csv_import.id),
                     "filename": original_filename,
+                    "posnummers_synced": synced_count,
                 }
             )
 
@@ -950,6 +998,26 @@ class LaserplannerService:
                 row_number=max_row + 1,
             )
             db.add(item)
+
+            # Sync to posnummers table if the job is linked to a fase
+            posnr = (data.get('posnr') or '').strip()
+            if posnr and job.fase_id:
+                existing = db.query(Posnummer).filter(
+                    Posnummer.fase_id == job.fase_id,
+                    func.lower(Posnummer.posnr) == posnr.lower(),
+                    Posnummer.is_active == True
+                ).first()
+                if not existing:
+                    new_pos = Posnummer(
+                        fase_id=job.fase_id,
+                        posnr=posnr,
+                        materiaal=data.get('kwaliteit') or 'Onbekend',
+                        profiel=data.get('profiel'),
+                        quantity=data.get('aantal') or 1,
+                        notes="Handmatig toegevoegd vanuit materiaallijst",
+                    )
+                    db.add(new_pos)
+
             db.commit()
             db.refresh(item)
             return item

@@ -22,6 +22,21 @@ export function useLaserJobs(statusFilter?: string) {
   })
 }
 
+export function useLaserJobsByFase(faseId: string | undefined) {
+  return useQuery({
+    queryKey: ['laser-jobs-by-fase', faseId],
+    queryFn: async () => {
+      if (!faseId) return []
+      const response = await api.get<LaserJob[]>(
+        `/api/laserplanner/jobs/by-fase/${faseId}`
+      )
+      return response.data
+    },
+    enabled: !!faseId,
+    staleTime: 30_000,
+  })
+}
+
 export function useLaserJob(jobId: string | undefined) {
   return useQuery({
     queryKey: ['laser-job', jobId],

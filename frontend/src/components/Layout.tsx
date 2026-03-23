@@ -15,7 +15,6 @@ import {
   User,
   Zap,
   MapPin,
-  List,
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -70,7 +69,6 @@ export function Layout({ children, compact = false }: LayoutProps) {
     { name: 'Projecten', path: '/projecten', icon: Folder, requiresPermission: 'canCreateProjects' as const },
     { name: 'Voorraad', path: '/voorraad', icon: Package },
     { name: 'Locatiebeheer', path: '/storage-locations', icon: MapPin },
-    { name: 'Stuklijst', path: '/stuklijst', icon: List },
     { name: 'Claims', path: '/claims', icon: FileText },
     { name: 'Admin', path: '/admin', icon: Settings },
   ]

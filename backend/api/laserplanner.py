@@ -71,6 +71,16 @@ async def list_jobs(
     jobs = LaserplannerService.list_jobs(db=db, status_filter=status_filter)
     return jobs
 
+@router.get("/jobs/by-fase/{fase_id}", response_model=List[JobResponse])
+async def list_jobs_by_fase(
+    fase_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_any_authenticated)
+):
+    """List all laser jobs for a specific fase"""
+    jobs = LaserplannerService.list_jobs_by_fase(db=db, fase_id=fase_id)
+    return jobs
+
 @router.get("/jobs/{job_id}", response_model=JobWithLineItems)
 async def get_job(
     job_id: UUID,

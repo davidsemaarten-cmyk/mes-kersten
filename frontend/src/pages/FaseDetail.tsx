@@ -1,13 +1,13 @@
 /**
  * FaseDetail Page
- * Phase 1.2: Complete fase management with orders, posnummers, and statistics
+ * Complete fase management with orders, posnummers, materiaallijst and statistics
  *
  * Tabs:
  * - Overzicht: Statistics and summary
- * - Bestanden: File management (Phase 2)
+ * - Bestanden: File management
  * - Posnummers: Part number management
  * - Orders: Orderreeksen and orders
- * - Materiaal: Material claims (Phase 5)
+ * - Materiaallijst: CSV imports, line items, bestanden per laserjob
  */
 
 import { useState } from 'react'
@@ -25,12 +25,14 @@ import { CreatePosnummerModal } from '../components/CreatePosnummerModal'
 import { PosnummerTable } from '../components/PosnummerTable'
 import { CreateOrderreeksModal } from '../components/CreateOrderreeksModal'
 import { OrderreeksCard } from '../components/OrderreeksCard'
+import { MaterialListTab } from '../components/MaterialListTab'
 import {
   ArrowLeft,
   ChevronRight,
   FileText,
   Package,
   ListOrdered,
+  List,
   Layers,
   BarChart3,
   Plus,
@@ -133,9 +135,9 @@ export function FaseDetail() {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="materiaal">
-              <Layers className="h-4 w-4 mr-2" />
-              Materiaal
+            <TabsTrigger value="materiaallijst">
+              <List className="h-4 w-4 mr-2" />
+              Materiaallijst
             </TabsTrigger>
           </TabsList>
 
@@ -313,19 +315,9 @@ export function FaseDetail() {
             )}
           </TabsContent>
 
-          {/* TAB 5: Materiaal (Placeholder) */}
-          <TabsContent value="materiaal">
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center">
-                  <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-lg font-medium mb-2">Materiaal Koppeling</p>
-                  <p className="text-muted-foreground">
-                    Materiaal koppeling wordt binnenkort toegevoegd
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+          {/* TAB 5: Materiaallijst */}
+          <TabsContent value="materiaallijst" className="space-y-4">
+            <MaterialListTab faseId={faseId!} projectId={projectId!} />
           </TabsContent>
         </Tabs>
       </div>

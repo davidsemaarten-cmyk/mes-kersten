@@ -17,7 +17,7 @@ import { Laserplanner } from './pages/Laserplanner'
 import { LaserplannerDetail } from './pages/LaserplannerDetail'
 import { NCViewerPage } from './pages/NCViewerPage'
 import { StepViewerPage } from './pages/StepViewerPage'
-import { BOMPage } from './pages/BOMPage'
+
 import { BuislaserPage } from './pages/BuislaserPage'
 
 // Create a QueryClient instance
@@ -54,9 +54,6 @@ function App() {
             {/* PlateStock Routes */}
             <Route path="/voorraad" element={<ProtectedRoute><Voorraad /></ProtectedRoute>} />
             <Route path="/claims" element={<ProtectedRoute><Claims /></ProtectedRoute>} />
-
-            {/* BOM / Stuklijst */}
-            <Route path="/stuklijst" element={<ProtectedRoute><BOMPage /></ProtectedRoute>} />
 
             {/* Orders Routes */}
             <Route path="/orders/plaatlaser" element={<ProtectedRoute><Laserplanner /></ProtectedRoute>} />

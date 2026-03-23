@@ -11,21 +11,33 @@ import { useCreateLaserJob } from '../hooks/useLaserplanner'
 interface CreateJobModalProps {
   open: boolean
   onClose: () => void
+  /** Pre-fill project (hides selector when set) */
+  defaultProjectId?: string
+  /** Pre-fill fase (hides selector when set) */
+  defaultFaseId?: string
 }
 
-export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
+export function CreateJobModal({ open, onClose, defaultProjectId, defaultFaseId }: CreateJobModalProps) {
   const createJob = useCreateLaserJob()
   const [formData, setFormData] = useState({
     naam: '',
     beschrijving: '',
-    project_id: '',
-    fase_id: ''
+    project_id: defaultProjectId ?? '',
+    fase_id: defaultFaseId ?? ''
   })
 
-  // Reset fase when project changes
+  // Sync defaults when they change (e.g. modal re-opens with different fase)
   useEffect(() => {
-    setFormData(prev => ({ ...prev, fase_id: '' }))
-  }, [formData.project_id])
+    if (defaultProjectId) setFormData(prev => ({ ...prev, project_id: defaultProjectId }))
+    if (defaultFaseId) setFormData(prev => ({ ...prev, fase_id: defaultFaseId }))
+  }, [defaultProjectId, defaultFaseId])
+
+  // Reset fase when project changes (only when user picks manually)
+  useEffect(() => {
+    if (!defaultFaseId) {
+      setFormData(prev => ({ ...prev, fase_id: '' }))
+    }
+  }, [formData.project_id, defaultFaseId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,7 +48,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
       project_id: formData.project_id,
       fase_id: formData.fase_id
     })
-    setFormData({ naam: '', beschrijving: '', project_id: '', fase_id: '' })
+    setFormData({ naam: '', beschrijving: '', project_id: defaultProjectId ?? '', fase_id: defaultFaseId ?? '' })
     onClose()
   }
 
@@ -53,29 +65,33 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
-          <div className="space-y-2">
-            <Label>Project *</Label>
-            <ProjectPhaseCombobox
-              value={formData.project_id}
-              onValueChange={(value) => setFormData({ ...formData, project_id: value })}
-              placeholder="Selecteer project..."
-            />
-          </div>
+          {!defaultProjectId && (
+            <div className="space-y-2">
+              <Label>Project *</Label>
+              <ProjectPhaseCombobox
+                value={formData.project_id}
+                onValueChange={(value) => setFormData({ ...formData, project_id: value })}
+                placeholder="Selecteer project..."
+              />
+            </div>
+          )}
 
-          <div className="space-y-2">
-            <Label>Fase *</Label>
-            <FaseCombobox
-              projectId={formData.project_id || null}
-              value={formData.fase_id}
-              onValueChange={(value) => setFormData({ ...formData, fase_id: value })}
-              placeholder="Selecteer fase..."
-            />
-            {!formData.project_id && (
-              <p className="text-xs text-muted-foreground">
-                Selecteer eerst een project
-              </p>
-            )}
-          </div>
+          {!defaultFaseId && (
+            <div className="space-y-2">
+              <Label>Fase *</Label>
+              <FaseCombobox
+                projectId={formData.project_id || null}
+                value={formData.fase_id}
+                onValueChange={(value) => setFormData({ ...formData, fase_id: value })}
+                placeholder="Selecteer fase..."
+              />
+              {!formData.project_id && (
+                <p className="text-xs text-muted-foreground">
+                  Selecteer eerst een project
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="naam">Naam *</Label>
