@@ -7,7 +7,7 @@ from uuid import UUID
 from datetime import datetime
 from typing import List
 
-from backend.utils.validators import validate_no_html
+from utils.validators import validate_no_html
 
 
 class OrderreeksCreate(BaseModel):

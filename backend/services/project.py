@@ -88,7 +88,8 @@ class ProjectService:
             }
         )
 
-        # Note: API layer must commit the transaction
+        db.commit()
+        db.refresh(project)
         return project
 
     @staticmethod
@@ -148,7 +149,8 @@ class ProjectService:
             details={"changes": changes}
         )
 
-        # Note: API layer must commit the transaction
+        db.commit()
+        db.refresh(project)
         return project
 
     @staticmethod
@@ -273,7 +275,7 @@ class ProjectService:
             }
         )
 
-        # Note: API layer must commit the transaction
+        db.commit()
 
     @staticmethod
     def get_project_statistics(db: Session, project_id: UUID) -> Dict[str, Any]:
@@ -404,7 +406,8 @@ class ProjectService:
             }
         )
 
-        # Note: API layer must commit the transaction
+        db.commit()
+        db.refresh(fase)
         return fase
 
     @staticmethod
@@ -476,7 +479,8 @@ class ProjectService:
             details={"changes": changes}
         )
 
-        # Note: API layer must commit the transaction
+        db.commit()
+        db.refresh(fase)
         return fase
 
     @staticmethod

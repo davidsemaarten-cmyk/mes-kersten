@@ -48,3 +48,21 @@ class UserLogin(BaseModel):
     """Schema for user login"""
     email: EmailStr
     password: str
+
+
+class LoginResponse(BaseModel):
+    """Schema for login response"""
+    user: UserResponse
+    csrf_token: str
+
+
+class MessageResponse(BaseModel):
+    """Generic message response"""
+    message: str
+    detail: Optional[str] = None
+
+
+class CsrfTokenResponse(BaseModel):
+    """Schema for CSRF token response"""
+    csrf_token: str
+    detail: str

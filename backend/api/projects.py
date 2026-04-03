@@ -85,24 +85,11 @@ async def create_project(
             beschrijving=project_data.beschrijving,
             current_user=current_user
         )
-
-        # Commit the transaction
-        db.commit()
-        db.refresh(project)
-
         return project
-
     except ProjectCodeExistsError as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e)
-        )
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Fout bij aanmaken project: {str(e)}"
         )
 
 
@@ -179,24 +166,11 @@ async def update_project(
             status=project_data.status,
             current_user=current_user
         )
-
-        # Commit the transaction
-        db.commit()
-        db.refresh(project)
-
         return project
-
     except ProjectNotFoundError as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
-        )
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Fout bij bijwerken project: {str(e)}"
         )
 
 
@@ -222,23 +196,11 @@ async def delete_project(
             project_id=project_id,
             current_user=current_user
         )
-
-        # Commit the transaction
-        db.commit()
-
         return None
-
     except ProjectNotFoundError as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
-        )
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Fout bij verwijderen project: {str(e)}"
         )
 
 
@@ -306,34 +268,21 @@ async def create_fase(
             current_user=current_user
         )
 
-        # Commit the transaction
-        db.commit()
-        db.refresh(fase)
-
         # Add computed fields
         fase.order_count = 0
         fase.posnummer_count = 0
         fase.file_count = 0
 
         return fase
-
     except ProjectNotFoundError as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
         )
     except FaseAlreadyExistsError as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e)
-        )
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Fout bij aanmaken fase: {str(e)}"
         )
 
 
@@ -419,28 +368,16 @@ async def update_fase(
             current_user=current_user
         )
 
-        # Commit the transaction
-        db.commit()
-        db.refresh(fase)
-
         # Add computed fields
         fase.order_count = 0
         fase.posnummer_count = 0
         fase.file_count = 0
 
         return fase
-
     except FaseNotFoundError as e:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
-        )
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Fout bij bijwerken fase: {str(e)}"
         )
 
 

@@ -9,7 +9,7 @@ from typing import Optional, List
 from uuid import UUID
 import re
 
-from backend.utils.validators import validate_no_html
+from utils.validators import validate_no_html
 
 
 # ============================================================

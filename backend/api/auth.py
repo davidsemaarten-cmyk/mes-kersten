@@ -11,7 +11,7 @@ from slowapi.util import get_remote_address
 
 from database import get_db
 from models.user import User
-from schemas.user import UserLogin, UserResponse
+from schemas.user import UserLogin, UserResponse, LoginResponse, MessageResponse, CsrfTokenResponse
 from utils.auth import (
     verify_password,
     create_access_token,
@@ -26,7 +26,7 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
-@router.post("/login", response_model=dict)
+@router.post("/login", response_model=LoginResponse)
 @limiter.limit("5/minute")
 def login(
     request: Request,
@@ -139,7 +139,7 @@ def get_current_user_info(
     return current_user
 
 
-@router.post("/logout")
+@router.post("/logout", response_model=MessageResponse)
 def logout(
     response: Response,
     current_user: User = Depends(get_current_user)
@@ -169,7 +169,7 @@ def logout(
     }
 
 
-@router.get("/csrf-token")
+@router.get("/csrf-token", response_model=CsrfTokenResponse)
 def get_csrf(
     request: Request,
     response: Response
