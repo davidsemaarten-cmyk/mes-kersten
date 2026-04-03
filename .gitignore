@@ -53,6 +53,14 @@ data/temp/
 *.log
 logs/
 
+# File storage — DXF, PDF, NC, STEP bestanden op schijf
+backend/data/
+
+# Test/tijdelijke bestanden
+*.stp
+*.step
+test-files/
+
 # Database
 *.db
 *.sqlite
