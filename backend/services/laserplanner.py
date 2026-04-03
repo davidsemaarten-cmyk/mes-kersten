@@ -596,12 +596,14 @@ class LaserplannerService:
             # Synchronise posnummers to the posnummers table for this fase.
             # This allows orders to reference posnummers directly via the
             # existing order_posnummers linkage.
-            synced_count = 0
+            # Delta-update: update existing posnummers if values changed, create new ones if absent.
+            created_count = 0
+            updated_count = 0
             if job.fase_id:
-                # Fetch existing active posnummers for this fase (case-insensitive lookup)
-                existing_posnrs = {
-                    p.posnr.lower()
-                    for p in db.query(Posnummer.posnr).filter(
+                # Build lookup: lowercase posnr -> Posnummer object
+                existing_pos_map = {
+                    p.posnr.lower(): p
+                    for p in db.query(Posnummer).filter(
                         Posnummer.fase_id == job.fase_id,
                         Posnummer.is_active == True
                     ).all()
@@ -609,22 +611,43 @@ class LaserplannerService:
 
                 for item_data in line_items:
                     posnr = (item_data.get('posnr') or '').strip()
-                    if not posnr or posnr.lower() in existing_posnrs:
+                    if not posnr:
                         continue
-                    # Create a new posnummer record from the CSV data
-                    new_pos = Posnummer(
-                        fase_id=job.fase_id,
-                        posnr=posnr,
-                        materiaal=item_data.get('kwaliteit') or 'Onbekend',
-                        profiel=item_data.get('profiel'),
-                        quantity=item_data.get('aantal') or 1,
-                        notes=f"Automatisch aangemaakt vanuit CSV import ({original_filename})",
-                    )
-                    db.add(new_pos)
-                    existing_posnrs.add(posnr.lower())
-                    synced_count += 1
 
-                if synced_count > 0:
+                    new_materiaal = item_data.get('kwaliteit') or 'Onbekend'
+                    new_profiel = item_data.get('profiel')
+                    new_quantity = item_data.get('aantal') or 1
+
+                    existing = existing_pos_map.get(posnr.lower())
+                    if existing:
+                        # Delta update: only update if values actually changed
+                        changed = False
+                        if existing.materiaal != new_materiaal:
+                            existing.materiaal = new_materiaal
+                            changed = True
+                        if existing.profiel != new_profiel:
+                            existing.profiel = new_profiel
+                            changed = True
+                        if existing.quantity != new_quantity:
+                            existing.quantity = new_quantity
+                            changed = True
+                        if changed:
+                            updated_count += 1
+                    else:
+                        # Create new posnummer record from the CSV data
+                        new_pos = Posnummer(
+                            fase_id=job.fase_id,
+                            posnr=posnr,
+                            materiaal=new_materiaal,
+                            profiel=new_profiel,
+                            quantity=new_quantity,
+                            notes=f"Automatisch aangemaakt vanuit CSV import ({original_filename})",
+                        )
+                        db.add(new_pos)
+                        existing_pos_map[posnr.lower()] = new_pos
+                        created_count += 1
+
+                if created_count > 0 or updated_count > 0:
                     db.flush()
 
             log_action(
@@ -637,7 +660,8 @@ class LaserplannerService:
                     "line_items_added": len(line_items),
                     "csv_import_id": str(csv_import.id),
                     "filename": original_filename,
-                    "posnummers_synced": synced_count,
+                    "posnummers_created": created_count,
+                    "posnummers_updated": updated_count,
                 }
             )
 
