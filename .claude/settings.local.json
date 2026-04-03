@@ -110,7 +110,10 @@
       "Bash(venvScriptspython -c \"from models import LaserStepFile; print\\(''OK:'', LaserStepFile.__tablename__\\)\")",
       "Bash(node -e \"require\\(''''three''''\\); console.log\\(''''three OK''''\\)\")",
       "Bash(gh api:*)",
-      "Bash(node -e \"require\\(''three-mesh-bvh''\\); console.log\\(''ok''\\)\")"
+      "Bash(node -e \"require\\(''three-mesh-bvh''\\); console.log\\(''ok''\\)\")",
+      "Bash(rm -f \"cto-plan-materiaallijst-fase.md\" \"cto-plan-module-herstructurering-stap2.md\" \"cto-plan-orderreeks-laserjob.md\" \"cto-plan-step-viewer-measurements.md\" \"cto-plan-voorraadbeheer-merge.md\" \"backup_voor_refactor.sql\" \"cloc_backend.csv\" \"cloc_backend2.csv\" \"cloc_frontend.csv\" \"nul\" \"tumbnail-voorbeeld.png\" \"Pz38.stp\" \"p1470.stp\")",
+      "Bash(rm -f backend/nul)",
+      "Bash(rm -rf test-files/)"
     ],
     "deny": [],
     "ask": []
