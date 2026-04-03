@@ -222,6 +222,25 @@ class DuplicatePosnummerError(ServiceError):
 
 
 # =====================================================
+# User Management Exceptions
+# =====================================================
+
+class UserNotFoundError(ServiceError):
+    """Raised when a requested user does not exist"""
+    pass
+
+
+class UserEmailExistsError(ServiceError):
+    """Raised when attempting to create/update a user with an email that already exists"""
+    pass
+
+
+class CannotDeactivateSelfError(ServiceError):
+    """Raised when an admin tries to deactivate their own account"""
+    pass
+
+
+# =====================================================
 # Validation Exceptions
 # =====================================================
 
