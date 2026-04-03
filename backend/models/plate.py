@@ -33,9 +33,9 @@ class Plate(Base):
     is_consumed = Column(Boolean, default=False, nullable=False, index=True)
     consumed_at = Column(DateTime(timezone=True), nullable=True)
     consumed_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     __table_args__ = (
         CheckConstraint("status IN ('beschikbaar', 'geclaimd', 'bij_laser')", name='check_status'),

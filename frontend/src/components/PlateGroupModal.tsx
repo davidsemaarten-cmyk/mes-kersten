@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Card, CardContent } from './ui/card'
 import { Badge } from './ui/badge'
 import { PlateDetailsModal } from './PlateDetailsModal'
@@ -70,6 +70,7 @@ export function PlateGroupModal({ open, onClose, plates }: PlateGroupModalProps)
               />
               Groep Platen: {first} - {last}
             </DialogTitle>
+            <DialogDescription className="sr-only">Overzicht van {plates.length} platen in deze groep</DialogDescription>
           </DialogHeader>
 
           {/* Group Summary */}
@@ -154,10 +155,10 @@ export function PlateGroupModal({ open, onClose, plates }: PlateGroupModalProps)
                             : 'Bij Laser'}
                         </Badge>
 
-                        {plate.claims.filter(c => c.actief).length > 0 && (
+                        {plate.claims.filter(c => c.is_active).length > 0 && (
                           <Badge variant="outline">
-                            {plate.claims.filter(c => c.actief).length} claim
-                            {plate.claims.filter(c => c.actief).length > 1 ? 's' : ''}
+                            {plate.claims.filter(c => c.is_active).length} claim
+                            {plate.claims.filter(c => c.is_active).length > 1 ? 's' : ''}
                           </Badge>
                         )}
                       </div>

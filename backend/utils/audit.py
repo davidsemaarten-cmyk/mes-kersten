@@ -78,6 +78,11 @@ class AuditAction(str, Enum):
     UPLOAD_DXF = "upload_dxf"
     DELETE_DXF = "delete_dxf"
 
+    # Storage location actions
+    CREATE_STORAGE_LOCATION = "create_storage_location"
+    UPDATE_STORAGE_LOCATION = "update_storage_location"
+    DELETE_STORAGE_LOCATION = "delete_storage_location"
+
 
 class EntityType(str, Enum):
     """
@@ -95,6 +100,7 @@ class EntityType(str, Enum):
     FILE = "file"
     CERTIFICATE = "certificate"
     LASER_JOB = "laser_job"
+    STORAGE_LOCATION = "storage_location"
 
 
 def log_action(

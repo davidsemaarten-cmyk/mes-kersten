@@ -20,17 +20,17 @@ export function PlateCard({ plate, onClick }: PlateCardProps) {
   const getStatusBadge = () => {
     switch (plate.status) {
       case 'beschikbaar':
-        return <Badge variant="default" className="bg-green-500">Beschikbaar</Badge>
+        return <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">Beschikbaar</Badge>
       case 'geclaimd':
-        return <Badge variant="default" className="bg-blue-500">Geclaimd</Badge>
+        return <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-700">Geclaimd</Badge>
       case 'bij_laser':
-        return <Badge variant="default" className="bg-orange-500">Bij Laser</Badge>
+        return <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">Bij Laser</Badge>
       default:
         return null
     }
   }
 
-  const activeClaimsCount = plate.claims?.filter(c => c.actief).length || 0
+  const activeClaimsCount = plate.claims?.filter(c => c.is_active).length || 0
 
   return (
     <Card

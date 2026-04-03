@@ -76,7 +76,7 @@ export const DEFAULT_VOORRAAD_COLUMNS: ColumnConfig[] = [
     id: 'claims',
     label: 'Claims',
     accessor: (plate) => {
-      const activeClaims = plate.claims?.filter(c => c.actief) || []
+      const activeClaims = plate.claims?.filter(c => c.is_active) || []
       if (activeClaims.length === 0) {
         return <span className="text-sm text-gray-400">-</span>
       }

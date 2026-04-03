@@ -6,7 +6,7 @@ export interface StorageLocation {
   id: string;
   naam: string;
   beschrijving?: string;
-  actief: boolean;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -19,7 +19,7 @@ export interface CreateStorageLocationData {
 export interface UpdateStorageLocationData {
   naam?: string;
   beschrijving?: string;
-  actief?: boolean;
+  is_active?: boolean;
 }
 
 export function useStorageLocations(includeInactive = false) {
@@ -31,7 +31,7 @@ export function useStorageLocations(includeInactive = false) {
       });
       return response.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 60_000, // 60 seconds
   });
 }
 

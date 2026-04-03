@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey  # Text kept for thumbnail_svg
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -34,7 +34,8 @@ class LaserDXFFile(Base):
     # lowercase filename stem used for posnr matching
     posnr_key = Column(String(500), nullable=False, default="")
 
-    file_content = Column(Text, nullable=False)
+    # Relative path from FILE_STORAGE_PATH — raw DXF content lives on disk.
+    file_path = Column(String(1000), nullable=False)
     thumbnail_svg = Column(Text, nullable=True)
 
     uploaded_by = Column(

@@ -21,11 +21,11 @@ class Claim(Base):
     project_number = Column(String, nullable=True)  # DEPRECATED field
     project_naam = Column(String, nullable=False, index=True)
     project_fase = Column(String, nullable=False, index=True)
-    actief = Column(Boolean, default=True, nullable=False, index=True)
+    is_active = Column(Boolean, default=True, nullable=False, index=True)
     area_needed = Column(Numeric(8, 2), nullable=True)  # DEPRECATED field
     m2_geclaimd = Column(Numeric(8, 2), nullable=True)
     claimed_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    claimed_at = Column(DateTime(timezone=True), server_default=func.now())
+    claimed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     notes = Column(String, nullable=True)
 
     __table_args__ = (
