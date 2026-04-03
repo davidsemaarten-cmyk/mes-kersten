@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
  * Redirects to login if user is not authenticated
  * Following PROJECT-MASTER.md pattern
  */
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
 
   // Show loading state while checking authentication

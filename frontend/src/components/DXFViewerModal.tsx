@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { CadViewer } from '@cadview/react'
 import type { Tool, MeasureEvent } from '@cadview/react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Loader2, AlertTriangle, Move, Ruler } from 'lucide-react'
 import { useLaserDXFFileDetail } from '../hooks/useLaserplanner'
 import { cn } from '../lib/utils'
@@ -38,6 +38,7 @@ export function DXFViewerModal({ open, onClose, jobId, dxfId, filename }: DXFVie
       <DialogContent className="max-w-4xl w-full h-[80vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-4 pb-2 shrink-0 flex flex-row items-center justify-between">
           <DialogTitle className="font-mono text-sm">{filename}</DialogTitle>
+          <DialogDescription className="sr-only">DXF bestand weergave</DialogDescription>
 
           {/* Tool switcher — only shown once the file is loaded */}
           {dxfFile && !isLoading && !error && (
