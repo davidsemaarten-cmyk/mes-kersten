@@ -41,6 +41,31 @@ export interface UserLogin {
   password: string
 }
 
+export interface UserCreateAdmin {
+  email: string
+  full_name: string
+  password: string
+  role: string
+}
+
+export interface UserUpdateAdmin {
+  email?: string
+  full_name?: string
+  password?: string
+  role?: string
+  is_active?: boolean
+}
+
+export interface UserAdminResponse {
+  id: string
+  email: string
+  full_name: string
+  role: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 // =====================================================
 // Project Types (placeholder for future implementation)
 // =====================================================

@@ -17,7 +17,7 @@ import uvicorn
 import logging
 
 # Import routers
-from api import auth, platestock, projects, order_types, orders, posnummers, laserplanner
+from api import auth, platestock, projects, order_types, orders, posnummers, laserplanner, users
 from database import get_db
 from config import settings
 
@@ -269,6 +269,7 @@ app.include_router(order_types.router, prefix="/api/order-types", tags=["Order T
 app.include_router(orders.router, prefix="/api", tags=["Orders"])
 app.include_router(posnummers.router, prefix="/api", tags=["Posnummers"])
 app.include_router(laserplanner.router, prefix="/api/laserplanner", tags=["Laserplanner"])
+app.include_router(users.router, prefix="/api/users", tags=["Users"])
 
 if __name__ == "__main__":
     print("=" * 50)
