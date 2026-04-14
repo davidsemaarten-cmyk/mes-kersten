@@ -59,8 +59,9 @@ class Fase(Base):
     # Phase 1.2 relationships:
     orderreeksen = relationship("Orderreeks", back_populates="fase", cascade="all, delete-orphan")
     posnummers = relationship("Posnummer", back_populates="fase", cascade="all, delete-orphan")
+    # Fase file attachments
+    files = relationship("FaseFile", back_populates="fase", cascade="all, delete-orphan")
     # Future relationships (Phase 2+):
-    # files = relationship("File", back_populates="fase", cascade="all, delete-orphan")
     # claims = relationship("Claim", back_populates="fase")
 
     # Table constraints

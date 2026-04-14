@@ -329,3 +329,47 @@ def link_posnummers_to_order(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Fout bij koppelen posnummers: {str(e)}"
         )
+
+
+@router.delete("/orders/{order_id}/link-posnummers", status_code=status.HTTP_200_OK)
+def unlink_posnummers_from_order(
+    order_id: UUID,
+    data: LinkPosnummersRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Unlink posnummers from an order.
+
+    - **Requires werkvoorbereider or admin role**
+    - Removes junction records between order and posnummers
+    - If posnummer_ids is empty, all posnummers are unlinked
+    """
+    require_admin_or_werkvoorbereider(current_user)
+
+    try:
+        success = OrderService.unlink_posnummers_from_order(
+            db=db,
+            order_id=order_id,
+            posnummer_ids=data.posnummer_ids,
+            current_user=current_user
+        )
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Fout bij ontkoppelen posnummers van order"
+            )
+
+        return {"message": f"{len(data.posnummer_ids)} posnummers ontkoppeld van order"}
+
+    except OrderNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Fout bij ontkoppelen posnummers: {str(e)}"
+        )

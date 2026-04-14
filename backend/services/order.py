@@ -393,3 +393,45 @@ class OrderService:
 
         db.commit()
         return True
+
+    @staticmethod
+    def unlink_posnummers_from_order(
+        db: Session,
+        order_id: UUID,
+        posnummer_ids: List[UUID],
+        current_user: User
+    ) -> bool:
+        """
+        Unlink posnummers from an order
+
+        Args:
+            db: Database session
+            order_id: Order ID
+            posnummer_ids: List of posnummer IDs to unlink (empty = unlink all)
+            current_user: User performing the action
+
+        Returns:
+            True if successful
+        """
+        order = db.query(Order).filter(Order.id == order_id).first()
+        if not order:
+            raise OrderNotFoundError("Order niet gevonden")
+
+        query = db.query(OrderPosnummer).filter(OrderPosnummer.order_id == order_id)
+
+        if posnummer_ids:
+            query = query.filter(OrderPosnummer.posnummer_id.in_(posnummer_ids))
+
+        query.delete(synchronize_session='fetch')
+
+        log_action(
+            db=db,
+            user_id=current_user.id,
+            action=AuditAction.UPDATE_ORDER,
+            entity_type=EntityType.ORDER,
+            entity_id=order_id,
+            details={"unlinked_posnummers": len(posnummer_ids) if posnummer_ids else 'all'},
+        )
+
+        db.commit()
+        return True

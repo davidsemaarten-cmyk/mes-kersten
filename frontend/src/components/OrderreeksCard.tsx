@@ -7,20 +7,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { ArrowRight, CheckCircle2, Circle, Clock, Trash2 } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Circle, Clock, Trash2, Link2 } from 'lucide-react'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useDeleteOrderreeks } from '@/hooks/useOrders'
 import { toast } from 'sonner'
+import { useState } from 'react'
+import { OrderPosnummerDialog } from './OrderPosnummerDialog'
 import type { OrderreeksResponse, OrderResponse } from '@/types/database'
 
 interface OrderreeksCardProps {
   orderreeks: OrderreeksResponse
   faseId: string
+  /** Pass faseId so the posnummer dialog can fetch fase's posnummers */
 }
 
 export function OrderreeksCard({ orderreeks, faseId }: OrderreeksCardProps) {
-  const { permissions } = usePermissions()
+  const { permissions, canManageProjects } = usePermissions()
   const deleteMutation = useDeleteOrderreeks(faseId)
+  const [linkDialogOrder, setLinkDialogOrder] = useState<{ id: string; typeName: string } | null>(null)
 
   const handleDelete = async () => {
     if (!confirm(`Weet je zeker dat je orderreeks "${orderreeks.title}" wilt verwijderen?`)) {
@@ -97,7 +101,8 @@ export function OrderreeksCard({ orderreeks, faseId }: OrderreeksCardProps) {
   const progressPercentage = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0
 
   return (
-    <Card>
+    <>
+      <Card>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="space-y-1">
@@ -165,6 +170,20 @@ export function OrderreeksCard({ orderreeks, faseId }: OrderreeksCardProps) {
                         {order.posnummer_count} delen
                       </Badge>
                     )}
+                    {canManageProjects && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        title="Posnummers koppelen"
+                        onClick={() =>
+                          setLinkDialogOrder({ id: order.id, typeName: order.order_type_name })
+                        }
+                      >
+                        <Link2 className="h-3 w-3 mr-1" />
+                        Koppel
+                      </Button>
+                    )}
                   </div>
 
                   {/* Arrow between orders */}
@@ -199,6 +218,19 @@ export function OrderreeksCard({ orderreeks, faseId }: OrderreeksCardProps) {
                         {order.posnummer_count}
                       </Badge>
                     )}
+                    {canManageProjects && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() =>
+                          setLinkDialogOrder({ id: order.id, typeName: order.order_type_name })
+                        }
+                      >
+                        <Link2 className="h-3 w-3 mr-1" />
+                        Koppel
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -206,6 +238,18 @@ export function OrderreeksCard({ orderreeks, faseId }: OrderreeksCardProps) {
           </div>
         )}
       </CardContent>
-    </Card>
+      </Card>
+
+    {/* Posnummer link dialog */}
+    {linkDialogOrder && (
+      <OrderPosnummerDialog
+        orderId={linkDialogOrder.id}
+        orderTypeName={linkDialogOrder.typeName}
+        faseId={faseId}
+        open={!!linkDialogOrder}
+        onOpenChange={(open) => !open && setLinkDialogOrder(null)}
+      />
+    )}
+    </>
   )
 }

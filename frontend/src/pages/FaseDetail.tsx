@@ -26,6 +26,8 @@ import { PosnummerTable } from '../components/PosnummerTable'
 import { CreateOrderreeksModal } from '../components/CreateOrderreeksModal'
 import { OrderreeksCard } from '../components/OrderreeksCard'
 import { MaterialListTab } from '../components/MaterialListTab'
+import { FaseBestandenTab } from '../components/FaseBestandenTab'
+import { AanmakenLaserjobButton } from '../components/AanmakenLaserjobButton'
 import {
   ArrowLeft,
   ChevronRight,
@@ -238,25 +240,22 @@ export function FaseDetail() {
             )}
           </TabsContent>
 
-          {/* TAB 2: Bestanden (Placeholder) */}
+          {/* TAB 2: Bestanden */}
           <TabsContent value="bestanden">
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-lg font-medium mb-2">Bestandsbeheer</p>
-                  <p className="text-muted-foreground">
-                    Bestandsupload en -beheer wordt binnenkort toegevoegd
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <FaseBestandenTab faseId={faseId!} />
           </TabsContent>
 
           {/* TAB 3: Posnummers */}
           <TabsContent value="posnummers" className="space-y-4">
             {canManageProjects && (
-              <div className="flex justify-end">
+              <div className="flex items-center justify-end gap-2">
+                {posnummers && posnummers.length > 0 && (
+                  <AanmakenLaserjobButton
+                    faseId={faseId!}
+                    projectId={projectId!}
+                    posnummers={posnummers}
+                  />
+                )}
                 <Button onClick={() => setCreatePosnummerOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Nieuw Posnummer

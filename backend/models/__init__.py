@@ -22,6 +22,7 @@ from .laser_dxf_file import LaserDXFFile
 from .laser_pdf_file import LaserPDFFile
 from .laser_nc_file import LaserNCFile
 from .laser_step_file import LaserStepFile
+from .fase_file import FaseFile
 
 __all__ = [
     "User",
@@ -45,4 +46,5 @@ __all__ = [
     "LaserPDFFile",
     "LaserNCFile",
     "LaserStepFile",
+    "FaseFile",
 ]

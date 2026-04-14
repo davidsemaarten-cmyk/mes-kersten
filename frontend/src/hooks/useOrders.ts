@@ -173,7 +173,7 @@ export function useAssignOrder(orderId: string) {
   })
 }
 
-export function useLinkPosnummers(orderId: string) {
+export function useLinkPosnummers(orderId: string, faseId?: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -187,6 +187,29 @@ export function useLinkPosnummers(orderId: string) {
     onSuccess: () => {
       // Invalidate this specific order to refresh posnummer count
       queryClient.invalidateQueries({ queryKey: ['order', orderId] })
+      if (faseId) {
+        queryClient.invalidateQueries({ queryKey: ['orderreeksen', faseId] })
+      }
+    },
+  })
+}
+
+export function useUnlinkPosnummers(orderId: string, faseId?: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: LinkPosnummersRequest) => {
+      const response = await api.delete(
+        `/api/orders/${orderId}/link-posnummers`,
+        { data }
+      )
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', orderId] })
+      if (faseId) {
+        queryClient.invalidateQueries({ queryKey: ['orderreeksen', faseId] })
+      }
     },
   })
 }
