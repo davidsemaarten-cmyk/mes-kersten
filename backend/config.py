@@ -156,23 +156,20 @@ class Settings(BaseSettings):
 
         return v
 
-    @field_validator('CORS_ORIGINS')
+    @field_validator('CORS_ORIGINS', mode='before')
     @classmethod
-    def validate_cors_origins(cls, v: List[str], info) -> List[str]:
+    def parse_cors_origins(cls, v, info):
         """
-        Validate CORS origins are appropriate for environment
+        Parse CORS_ORIGINS from comma-separated string (env var) or list.
+        In production, filter out localhost origins automatically.
         """
+        if isinstance(v, str):
+            v = [origin.strip() for origin in v.split(',') if origin.strip()]
+        
         env = info.data.get('ENVIRONMENT', 'development')
-
         if env == 'production':
-            # Check if localhost origins are present in production
-            localhost_origins = [origin for origin in v if 'localhost' in origin or '127.0.0.1' in origin]
-            if localhost_origins:
-                raise ValueError(
-                    f'CORS_ORIGINS contains localhost origins in production: {localhost_origins}. '
-                    'Remove localhost origins in production.'
-                )
-
+            v = [origin for origin in v if 'localhost' not in origin and '127.0.0.1' not in origin]
+        
         return v
 
     class Config:
