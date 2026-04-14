@@ -1,0 +1,40 @@
+services:
+  # Backend - FastAPI
+  - type: web
+    name: mes-kersten-backend
+    runtime: python
+    region: frankfurt
+    plan: free
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_JE9veuSTMW7q@ep-withered-cake-abs2u5g7.eu-west-2.aws.neon.tech/neondb?sslmode=require
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: PYTHON_VERSION
+        value: "3.11.11"
+
+  # Frontend - React (Static Site)
+  - type: web
+    name: mes-kersten-frontend
+    runtime: static
+    region: frankfurt
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://mes-kersten-backend.onrender.com
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

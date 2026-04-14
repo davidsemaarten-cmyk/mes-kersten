@@ -50,6 +50,7 @@ class Settings(BaseSettings):
             "http://127.0.0.1:5175",
             "http://127.0.0.1:5176",
             "http://127.0.0.1:5177",
+            "https://mes-kersten-frontend.onrender.com",
         ],
         description="Allowed CORS origins"
     )
