@@ -124,8 +124,8 @@ def set_csrf_cookie(response: Response, token: str):
         key="csrf_token",
         value=token,
         httponly=False,  # JavaScript needs to read this for X-CSRF-Token header
-        secure=not settings.DEBUG,  # HTTPS only in production
-        samesite="lax",  # Prevents CSRF from external sites
+        secure=True,  # Required when SameSite=none
+        samesite="none",  # Cross-origin cookie (frontend ≠ backend domain)
         max_age=CSRF_TOKEN_EXPIRE_HOURS * 3600,  # Convert to seconds
         path="/",
         domain=None

@@ -90,15 +90,19 @@ def login(
     access_token = create_access_token(data={"sub": str(user.id)})
 
     # Set httpOnly cookie (XSS protection)
+    # SameSite="none" is required because frontend and backend are on different
+    # subdomains (mes-kersten-frontend.onrender.com vs mes-kersten.onrender.com).
+    # "lax" would prevent the cookie from being sent on cross-origin API requests,
+    # causing immediate logout on mobile browsers and some desktop browsers.
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,  # Not accessible to JavaScript (XSS protection)
-        secure=not settings.DEBUG,  # HTTPS only in production
-        samesite="lax",  # CSRF protection
+        secure=True,  # Required when SameSite=none
+        samesite="none",  # Cross-origin cookie (frontend ≠ backend domain)
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert to seconds
         path="/",
-        domain=None  # Same domain only
+        domain=None
     )
 
     # Generate and set CSRF token
@@ -156,11 +160,13 @@ def logout(
     Returns:
         Success message
     """
-    # Clear the httpOnly cookie
+    # Clear the httpOnly cookie — must match set_cookie attributes
     response.delete_cookie(
         key="access_token",
         path="/",
-        domain=None
+        domain=None,
+        secure=True,
+        samesite="none",
     )
 
     return {
