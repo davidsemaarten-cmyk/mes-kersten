@@ -53,6 +53,7 @@ class UserLogin(BaseModel):
 class LoginResponse(BaseModel):
     """Schema for login response"""
     user: UserResponse
+    access_token: str
     csrf_token: str
 
 

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import api from '../lib/api'
+import api, { storeToken, clearToken } from '../lib/api'
 import type { User } from '../types/database'
 
 interface AuthContextType {
@@ -68,12 +68,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const response = await api.post('/api/auth/login', { email, password })
 
-      // Token is stored in httpOnly cookie by server
-      // Response contains user info + CSRF token (NO JWT token in body)
+      if (response.data.access_token) {
+        storeToken(response.data.access_token)
+      }
       if (response.data.user) {
         setUser(response.data.user)
-        // CSRF token is automatically stored in cookie by server
-        // No need to manually handle it - axios interceptor will read it
       }
     } catch (error) {
       throw error
@@ -88,6 +87,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Even if logout fails, clear local state
       console.error('Logout error:', error)
     } finally {
+      clearToken()
       setUser(null)
     }
   }, [])

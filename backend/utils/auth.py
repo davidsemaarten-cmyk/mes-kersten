@@ -106,10 +106,11 @@ def get_current_user(
     db: Session = Depends(get_db)
 ) -> User:
     """
-    FastAPI dependency to get the current authenticated user from httpOnly cookie
+    FastAPI dependency to get the current authenticated user.
+    Reads token from Authorization header (Bearer) with cookie fallback.
 
     Args:
-        request: FastAPI Request object to read cookies
+        request: FastAPI Request object
         db: Database session
 
     Returns:
@@ -117,14 +118,17 @@ def get_current_user(
 
     Raises:
         HTTPException: If token is invalid or user not found
-
-    Usage:
-        @router.get("/protected")
-        def protected_route(current_user: User = Depends(get_current_user)):
-            return {"user": current_user.email}
     """
-    # Read token from httpOnly cookie
-    token = request.cookies.get("access_token")
+    token = None
+
+    # 1. Try Authorization header (preferred)
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header[7:]  # Strip "Bearer "
+
+    # 2. Fallback to httpOnly cookie (backwards compat)
+    if not token:
+        token = request.cookies.get("access_token")
 
     if not token:
         raise HTTPException(

@@ -4,31 +4,39 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000, // 30 second timeout
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Send cookies with requests (CRITICAL for httpOnly cookies)
+  withCredentials: true, // Keep for backwards compat with cookie auth
 })
 
-// Helper function to get CSRF token from cookies
-function getCsrfTokenFromCookie(): string | null {
-  const name = 'csrf_token='
-  const decodedCookie = decodeURIComponent(document.cookie)
-  const cookieArray = decodedCookie.split(';')
+// ── Token helpers ──────────────────────────────────────────────────────
+const TOKEN_KEY = 'mes_access_token'
 
-  for (let i = 0; i < cookieArray.length; i++) {
-    let cookie = cookieArray[i].trim()
-    if (cookie.indexOf(name) === 0) {
-      return cookie.substring(name.length, cookie.length)
-    }
-  }
-  return null
+export function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY)
 }
 
-// Development-only request/response logging
+export function storeToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token)
+}
+
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY)
+}
+
+// ── Request interceptor: attach Bearer token ───────────────────────────
+api.interceptors.request.use((config) => {
+  const token = getStoredToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// ── Development-only logging ───────────────────────────────────────────
 if (import.meta.env.DEV) {
-  // Request logging
   api.interceptors.request.use(
     (config) => {
       console.log(
@@ -45,7 +53,6 @@ if (import.meta.env.DEV) {
     }
   )
 
-  // Response logging
   api.interceptors.response.use(
     (response) => {
       console.log(
@@ -68,26 +75,13 @@ if (import.meta.env.DEV) {
   )
 }
 
-// Add CSRF token to state-changing requests (POST, PUT, DELETE, PATCH)
-api.interceptors.request.use((config) => {
-  // Only add CSRF token for state-changing methods
-  if (config.method && ['post', 'put', 'delete', 'patch'].includes(config.method.toLowerCase())) {
-    const csrfToken = getCsrfTokenFromCookie()
-    if (csrfToken) {
-      config.headers['X-CSRF-Token'] = csrfToken
-    }
-  }
-  return config
-})
-
-// Handle auth errors (NO token interceptor needed - cookies sent automatically)
+// ── Response interceptor: handle 401 ───────────────────────────────────
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid — notify the auth layer via a custom event.
-      // The AuthProvider listens for this and handles client-side navigation,
-      // avoiding a full page reload which would reset the React Query cache.
+      // Token expired or invalid — clear stored token and notify auth layer
+      clearToken()
       if (!window.location.pathname.includes('/login')) {
         window.dispatchEvent(new CustomEvent('auth:logout'))
       }

@@ -108,7 +108,7 @@ def login(
     # Generate and set CSRF token
     csrf_token = get_csrf_token(request, response)
 
-    # Return user info + CSRF token (NO JWT token in response body)
+    # Return user info + token in response body for localStorage auth
     return {
         "user": {
             "id": str(user.id),
@@ -121,6 +121,7 @@ def login(
             "created_at": user.created_at.isoformat(),
             "updated_at": user.updated_at.isoformat()
         },
+        "access_token": access_token,
         "csrf_token": csrf_token
     }
 
